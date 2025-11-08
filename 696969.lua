@@ -1586,11 +1586,24 @@ do
          end
          
          if not shouldAccept then
-             print("❌ [Auto Trade] Trade not meeting acceptance criteria - Declining (Mode: " .. acceptanceMode .. ")")
-             TradeRE:FireServer({event = "decline"})
-             autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
-             return
-         end
+         print("❌ [Auto Trade] Trade not meeting acceptance criteria - Declining (Mode: " .. acceptanceMode .. ")")
+         TradeRE:FireServer({event = "decline"})
+         autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
+         
+             -- Re-focus pet after declining
+              local CharacterRE = ReplicatedStorage:FindFirstChild("Remote") and 
+                                 ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
+              if CharacterRE then
+                  CharacterRE:FireServer("Focus")
+                  local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
+                  if petUID ~= "" then
+                      task.wait(0.1)
+                      CharacterRE:FireServer("Focus", petUID)
+                  end
+              end
+              
+              return
+          end
          
          if acceptByValue then
              print("✅ [Auto Trade] Accepting due to high-value pet")
@@ -1598,13 +1611,26 @@ do
         
         -- Check if trader offers better value
         if Options.RequireBetterValue and Options.RequireBetterValue.Value then
-            if traderValue < playerValue then
-                print("❌ [Auto Trade] Trader value too low")
-                TradeRE:FireServer({event = "decline"})
-                autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
-                return
-            end
-        end
+        if traderValue < playerValue then
+        print("❌ [Auto Trade] Trader value too low")
+        TradeRE:FireServer({event = "decline"})
+        autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
+        
+            -- Re-focus pet after declining
+                local CharacterRE = ReplicatedStorage:FindFirstChild("Remote") and 
+                                    ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
+                 if CharacterRE then
+                     CharacterRE:FireServer("Focus")
+                     local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
+                     if petUID ~= "" then
+                         task.wait(0.1)
+                         CharacterRE:FireServer("Focus", petUID)
+                     end
+                 end
+                 
+                 return
+             end
+         end
         
         -- Accept trade
         print("✅ [Auto Trade] Accepting (Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ")")
