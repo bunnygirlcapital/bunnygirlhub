@@ -1461,19 +1461,22 @@ do
 
     -- Trade Decision Logic
     local function handleTrade(tradeData)
-        print("📨 [Auto Trade] Trade offer received")
-        
-        if not autoTradeState.enabled or not dependenciesLoaded then 
-            print("⚠️ [Auto Trade] Ignoring - auto trade disabled or not ready")
-            return 
+        if not tradeData then
+            print("⚠️ [Auto Trade] No trade data received")
+            return
         end
-        
-        if not tradeData or not tradeData.data then
-        print("⚠️ [Auto Trade] Invalid trade data - missing data")
-        print("🔍 [Debug] tradeData:", tradeData)
-            if tradeData then
-                print("🔍 [Debug] tradeData keys:", table.concat(getKeys(tradeData), ", "))
-            end
+
+        if not tradeData.data then
+            -- This is likely a bargain response or other event, not a trade offer
+            print("📨 [Auto Trade] Trade response received (not an offer)")
+            print("🔍 [Debug] Response keys:", table.concat(getKeys(tradeData), ", "))
+            return
+        end
+
+        print("📨 [Auto Trade] Trade offer received")
+
+        if not autoTradeState.enabled or not dependenciesLoaded then
+            print("⚠️ [Auto Trade] Ignoring - auto trade disabled or not ready")
             return
         end
         
