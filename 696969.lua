@@ -10,7 +10,7 @@ local Players = game:GetService("Players")
 
 local Window = Fluent:CreateWindow({
     Title = "Bunny Girl Hub | Version " .. VERSION,
-    SubTitle = "by xxxxxx",
+    SubTitle = "by finder",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     -- Acrylic = true, -- The blur may be detectable, setting this to false disables blur entirely
@@ -1449,6 +1449,16 @@ do
         })
     end
     
+    -- Helper function to get table keys as strings
+    local function getKeys(tbl)
+        if not tbl or type(tbl) ~= "table" then return {"not a table"} end
+        local keys = {}
+        for k, v in pairs(tbl) do
+            table.insert(keys, tostring(k))
+        end
+        return keys
+    end
+
     -- Trade Decision Logic
     local function handleTrade(tradeData)
         print("📨 [Auto Trade] Trade offer received")
@@ -1458,16 +1468,23 @@ do
             return 
         end
         
-        if not tradeData or not tradeData.data then 
-            print("⚠️ [Auto Trade] Invalid trade data - missing data")
-            return 
+        if not tradeData or not tradeData.data then
+        print("⚠️ [Auto Trade] Invalid trade data - missing data")
+        print("🔍 [Debug] tradeData:", tradeData)
+            if tradeData then
+                print("🔍 [Debug] tradeData keys:", table.concat(getKeys(tradeData), ", "))
+            end
+            return
         end
         
         local data = tradeData.data
         
-        if not data.HoldPet or not data.TradePet then 
-            print("⚠️ [Auto Trade] Invalid trade data - missing HoldPet or TradePet")
-            return 
+        if not data.HoldPet or not data.TradePet then
+        print("⚠️ [Auto Trade] Invalid trade data - missing HoldPet or TradePet")
+        print("🔍 [Debug] data.HoldPet:", data.HoldPet)
+            print("🔍 [Debug] data.TradePet:", data.TradePet)
+            print("🔍 [Debug] data keys:", table.concat(getKeys(data), ", "))
+            return
         end
         
         autoTradeState.currentTrade = data
@@ -1506,10 +1523,11 @@ do
         
         -- Auto Bargain
         if Options.AutoBargain and Options.AutoBargain.Value and bargainTime < 2 then
-            if fairnessRatio < (Options.MinFairness and Options.MinFairness.Value or 0) then
-                print("🎲 [Auto Trade] Bargaining...")
-                TradeRE:FireServer({event = "bargain"})
-                return
+        if fairnessRatio < (Options.MinFairness and Options.MinFairness.Value or 0) then
+        print("🎲 [Auto Trade] Bargaining... (BargainTime: " .. tostring(bargainTime) .. ")")
+        TradeRE:FireServer({event = "bargain"})
+        print("✅ [Auto Trade] Bargain event sent, waiting for server response...")
+            return
             end
         end
         
@@ -1604,15 +1622,16 @@ do
     local MinFairness = TradeSection:AddSlider("MinFairness", {
         Title = "Min Fairness %",
         Description = "Minimum fairness ratio to accept (0 = fair trade)",
-        Default = 90,
+        Default = 0,
         Min = -100,
         Max = 100,
         Rounding = 1
     })
     
     MinFairness:OnChanged(function(value)
-        -- Convert percentage to decimal
-        Options.MinFairness.Value = value / 100
+    -- Convert percentage to decimal
+    Options.MinFairness.Value = value / 100
+        print("📊 [MinFairness] Changed to: " .. tostring(value) .. "% (" .. tostring(Options.MinFairness.Value) .. ")")
     end)
     
     local RequireBetterValue = TradeSection:AddToggle("RequireBetterValue", {
@@ -1635,7 +1654,7 @@ do
         Title = "Held Pet UID",
         Description = "Pet UID to auto-equip after teleport (detected automatically)",
         Default = "",
-        Placeholder = "",
+        Placeholder = "ef1327451dd0459b904a3c7ae93ba486",
         Numeric = false,
         Finished = true
     })
@@ -1799,7 +1818,7 @@ do
     -- Background task to re-equip pet after 30 minutes of inactivity
     task.spawn(function()
         task.wait(5) -- Wait for script to fully initialize
-        print("🕐 [Auto Re-equip] Started inactivity monitor (5min timeout)")
+        print("🕐 [Auto Re-equip] Started inactivity monitor (30min timeout)")
         
         while not Fluent.Unloaded do
             task.wait(60) -- Check every minute
@@ -1807,12 +1826,12 @@ do
             -- Only check if auto trade is enabled
             if autoTradeState.enabled then
                 local timeSinceLastTrade = os.time() - autoTradeState.lastTradeTime
-                local fiveMinutes = 30 * 5 -- 30 minutes in seconds
+                local thirtyMinutes = 30 * 60 -- 30 minutes in seconds
                 
-                if timeSinceLastTrade >= fiveMinutes then
+                if timeSinceLastTrade >= thirtyMinutes then
                     local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
                     if petUID ~= "" then
-                        print("⏰ [Auto Re-equip] 5 minutes since last trade - re-equipping pet")
+                        print("⏰ [Auto Re-equip] 30 minutes since last trade - re-equipping pet")
                         equipPet(petUID)
                         autoTradeState.lastTradeTime = os.time() -- Reset timer after re-equipping
                     else
@@ -2169,6 +2188,7 @@ local function autoSaveConfig()
             return false
         end
         SaveManager:Save(CONFIG_NAME)
+        print("💾 [Auto-Save] Configuration saved successfully")
         return true
     end)
     
