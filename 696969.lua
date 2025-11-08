@@ -1527,6 +1527,38 @@ do
 		return keys
 	end
 
+	-- Global webhook function for trade notifications
+	local function sendWebhookNotification(content)
+		if not Options.UrlInput or not Options.UrlInput.Value or Options.UrlInput.Value == "" then
+			return false
+		end
+
+		local webhookUrl = Options.UrlInput.Value
+		local data = {
+			["content"] = content,
+		}
+
+		local success, err = pcall(function()
+			local jsonData = game:GetService("HttpService"):JSONEncode(data)
+			local response = request({
+				Url = webhookUrl,
+				Method = "POST",
+				Headers = {
+					["Content-Type"] = "application/json",
+				},
+				Body = jsonData,
+			})
+		end)
+
+		if success then
+			print("✅ [Webhook] Notification sent")
+			return true
+		else
+			print("❌ [Webhook] Failed to send: " .. tostring(err))
+			return false
+		end
+	end
+
 	-- Helper function to get key-value pairs as strings
 	local function getKeyValues(tbl)
 		if not tbl or type(tbl) ~= "table" then
@@ -1782,6 +1814,25 @@ do
 			print("✅ [Auto Trade] Accepting (Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ")")
 			TradeRE:FireServer({ event = "accept" })
 			autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+
+			-- Send webhook notification
+			local traderPetsList = {}
+			for _, pet in pairs(traderPets) do
+				table.insert(traderPetsList, tostring(pet.T) .. " (" .. tostring(pet.M) .. ")")
+			end
+			local webhookMessage = string.format(
+				"**Trade Accepted** 🎉\n"
+					.. "Your Pet: %s (%s)\n"
+					.. "Trader Pets: %s\n"
+					.. "Fairness: %.1f%%\n"
+					.. "Trade #%d",
+				tostring(playerPet.T),
+				tostring(playerPet.M),
+				table.concat(traderPetsList, ", "),
+				fairnessRatio * 100,
+				autoTradeState.tradeCount
+			)
+			sendWebhookNotification(webhookMessage)
 
 			-- Clear held pet UID after accepting trade (pet is now traded away)
 			if Options.HeldPetUID then
