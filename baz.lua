@@ -1662,12 +1662,12 @@ do
     end)
     
     local AutoAcceptPetValue = TradeSection:AddInput("AutoAcceptPetValue", {
-        Title = "Auto Accept Pet Value",
-        Description = "Accept trade if any trader pet >= this value (0 = disabled)",
-        Default = "0",
-        Numeric = true,
-        Finished = false,
-        Placeholder = "1000000"
+    Title = "Auto Accept Pet Value",
+    Description = "Accept trade if any trader pet >= this value (0 = disabled)",
+    Default = "1000000",
+    Numeric = true,
+    Finished = false,
+    Placeholder = "1000000"
     })
     
     AutoAcceptPetValue:OnChanged(function(value)
