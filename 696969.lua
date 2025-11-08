@@ -678,11 +678,11 @@ do
         Description = "Begin monitoring for eggs",
         Callback = function()
             startEggMonitoring()
-            Fluent:Notify({
-                Title = "Monitoring Started",
-                Content = "Now scanning for eggs",
-                Duration = 3
-            })
+            -- Fluent:Notify({
+            --     Title = "Monitoring Started",
+            --     Content = "Now scanning for eggs",
+            --     Duration = 3
+            -- })
         end
     })
     
@@ -691,11 +691,11 @@ do
         Description = "Stop monitoring for eggs",
         Callback = function()
             stopEggMonitoring()
-            Fluent:Notify({
-                Title = "Monitoring Stopped",
-                Content = "Stopped scanning for eggs",
-                Duration = 3
-            })
+            -- Fluent:Notify({
+            --     Title = "Monitoring Stopped",
+            --     Content = "Stopped scanning for eggs",
+            --     Duration = 3
+            -- })
         end
     })
     
@@ -706,11 +706,11 @@ do
             eggBuyerState.eggData.conveyorEggs = findEggsInReplicatedStorage()
             local eggs = eggBuyerState.eggData.conveyorEggs
             local matching = findMatchingEggs()
-            Fluent:Notify({
-                Title = "Scan Complete",
-                Content = string.format("Found %d eggs, %d matching filters", #eggs, #matching),
-                Duration = 5
-            })
+            -- Fluent:Notify({
+            --     Title = "Scan Complete",
+            --     Content = string.format("Found %d eggs, %d matching filters", #eggs, #matching),
+            --     Duration = 5
+            -- })
         end
     })
     
@@ -1264,11 +1264,11 @@ do
                 startAutoBuyLoop()
                 print("🔍 loopTask after start: " .. tostring(foodBuyerState.loopTask))
                 local foodList = table.concat(selectedFoods, ", ")
-                Fluent:Notify({
-                    Title = "Auto Buy Enabled",
-                    Content = "Automatically purchasing " .. foodList .. " every 5 minutes",
-                    Duration = 3
-                })
+                -- Fluent:Notify({
+                --     Title = "Auto Buy Enabled",
+                --     Content = "Automatically purchasing " .. foodList .. " every 5 minutes",
+                --     Duration = 3
+                -- })
                 print("✅ Auto buy loop started, notification sent")
             else
                 print("🛑 Toggle is OFF, stopping loop...")
