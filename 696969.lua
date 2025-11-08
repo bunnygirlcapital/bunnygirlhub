@@ -1730,11 +1730,18 @@ do
 			-- Check if any pet meets high-value threshold
 			local acceptByValue = false
 			local acceptThreshold = Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0
+			local highValuePets = {} -- Track high-value pets for webhook
 			if acceptThreshold > 0 then
 				for i, pet in pairs(traderPets) do
 					local petValue = getPetValue(pet)
 					if petValue >= acceptThreshold then
 						acceptByValue = true
+						table.insert(highValuePets, {
+							index = i,
+							value = petValue,
+							type = pet.T,
+							mutation = pet.M
+						})
 						print(
 							"✅ [Auto Trade] High-value pet found #"
 								.. i
@@ -1744,9 +1751,23 @@ do
 								.. formatNumber(acceptThreshold)
 								.. ")"
 						)
-						break
 					end
 				end
+			end
+			
+			-- Send webhook notification if there are high-value pets
+			if #highValuePets > 0 then
+				local webhookMsg = "🚨 **High-Value Trade Alert** 🚨\n\n"
+				webhookMsg = webhookMsg .. "**Your Pet:**\n"
+				webhookMsg = webhookMsg .. "- Type: " .. tostring(playerPet.T) .. "\n"
+				webhookMsg = webhookMsg .. "- Mutation: " .. tostring(playerPet.M) .. "\n"
+				webhookMsg = webhookMsg .. "- Value: " .. formatNumber(playerValue) .. "\n\n"
+				webhookMsg = webhookMsg .. "**Trader Offering:\n"
+				for _, petInfo in pairs(highValuePets) do
+					webhookMsg = webhookMsg .. "- Pet #" .. petInfo.index .. ": " .. tostring(petInfo.type) .. " (" .. tostring(petInfo.mutation) .. ") - **" .. formatNumber(petInfo.value) .. "**\n"
+				end
+				webhookMsg = webhookMsg .. "\nMode: " .. acceptanceMode
+				sendWebhookNotification(webhookMsg)
 			end
 
 			-- Determine if trade should be accepted based on mode
