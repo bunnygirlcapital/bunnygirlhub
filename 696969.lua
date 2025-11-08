@@ -1536,28 +1536,49 @@ do
             end
         end
         
-        -- Check fairness threshold
+        -- Check fairness threshold and acceptance mode
         local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
-        print("📊 [Auto Trade] Final check - BargainTime: " .. tostring(bargainTime) .. ", Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ", Min: " .. string.format("%.1f%%", minFairnessPercent * 100))
-         if fairnessRatio < minFairnessPercent then
-            -- Check for high-value pet override
-            local acceptThreshold = Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0
-            if acceptThreshold > 0 then
-                for i, pet in pairs(traderPets) do
-                    local petValue = getPetValue(pet)
-                    if petValue >= acceptThreshold then
-                        print("✅ [Auto Trade] Accepting due to high-value pet #" .. i .. " (" .. formatNumber(petValue) .. " >= " .. formatNumber(acceptThreshold) .. ")")
-                        TradeRE:FireServer({event = "accept"})
-                        autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
-                        return
-                    end
-                end
+        local acceptanceMode = Options.AcceptanceMode and Options.AcceptanceMode.Value or "Fairness Only"
+        
+        print("📊 [Auto Trade] Final check - BargainTime: " .. tostring(bargainTime) .. ", Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ", Min: " .. string.format("%.1f%%", minFairnessPercent * 100) .. ", Mode: " .. acceptanceMode)
+        
+        -- Check if fairness passes
+        local acceptByFairness = fairnessRatio >= minFairnessPercent
+        
+        -- Check if any pet meets high-value threshold
+        local acceptByValue = false
+        local acceptThreshold = Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0
+        if acceptThreshold > 0 then
+        for i, pet in pairs(traderPets) do
+        local petValue = getPetValue(pet)
+        if petValue >= acceptThreshold then
+                acceptByValue = true
+                print("✅ [Auto Trade] High-value pet found #" .. i .. " (" .. formatNumber(petValue) .. " >= " .. formatNumber(acceptThreshold) .. ")")
+                break
             end
-            print("❌ [Auto Trade] Trade too unfair - Declining")
-            TradeRE:FireServer({event = "decline"})
-            autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
-            return
         end
+        end
+         
+         -- Determine if trade should be accepted based on mode
+         local shouldAccept = false
+         if acceptanceMode == "Fairness Only" then
+             shouldAccept = acceptByFairness
+         elseif acceptanceMode == "Pet Value Only" then
+             shouldAccept = acceptByValue
+         elseif acceptanceMode == "Either" then
+             shouldAccept = acceptByFairness or acceptByValue
+         end
+         
+         if not shouldAccept then
+             print("❌ [Auto Trade] Trade not meeting acceptance criteria - Declining (Mode: " .. acceptanceMode .. ")")
+             TradeRE:FireServer({event = "decline"})
+             autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
+             return
+         end
+         
+         if acceptByValue then
+             print("✅ [Auto Trade] Accepting due to high-value pet")
+         end
         
         -- Check if trader offers better value
         if Options.RequireBetterValue and Options.RequireBetterValue.Value then
@@ -1653,20 +1674,28 @@ do
     })
 
     MinFairness:OnChanged(function(value)
-        local numValue = tonumber(value) or 90
-        -- Clamp value to 0-100 range
-        numValue = math.max(0, math.min(100, numValue))
-        
-         -- Update MinFairness in options to the 0-100 value
-         Options.MinFairness.Value = numValue
-         
-         -- Calculate MinFairnessPercentage (0-1 range for calculations)
-         Options.MinFairnessPercentage.Value = numValue / 100
-         
-         print("📊 [MinFairness] Changed to: " .. tostring(numValue) .. "% (0-1: " .. string.format("%.2f", Options.MinFairnessPercentage.Value) .. ")")
-     end)
+    local numValue = tonumber(value) or 90
+    -- Clamp value to 0-100 range
+    numValue = math.max(0, math.min(100, numValue))
     
-    local AutoAcceptPetValue = TradeSection:AddInput("AutoAcceptPetValue", {
+    -- Update MinFairness in options to the 0-100 value
+    Options.MinFairness.Value = numValue
+    
+    -- Calculate MinFairnessPercentage (0-1 range for calculations)
+    Options.MinFairnessPercentage.Value = numValue / 100
+    
+    print("📊 [MinFairness] Changed to: " .. tostring(numValue) .. "% (0-1: " .. string.format("%.2f", Options.MinFairnessPercentage.Value) .. ")")
+    end)
+    
+    local AcceptanceMode = TradeSection:AddDropdown("AcceptanceMode", {
+         Title = "Acceptance Mode",
+         Description = "How to decide whether to accept trades",
+         Values = {"Fairness Only", "Pet Value Only", "Either"},
+         Multi = false,
+         Default = 1
+     })
+     
+     local AutoAcceptPetValue = TradeSection:AddInput("AutoAcceptPetValue", {
     Title = "Auto Accept Pet Value",
     Description = "Accept trade if any trader pet >= this value (0 = disabled)",
     Default = "1000000",
