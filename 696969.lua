@@ -505,7 +505,7 @@ do
                 
                 table.insert(eggBuyerState.eggData.conveyorEggs, eggInfo)
                 
-                print("🥚 New egg detected: " .. eggInfo.name .. " (" .. eggInfo.mutation .. ") on " .. eggInfo.island)
+                -- print("🥚 New egg detected: " .. eggInfo.name .. " (" .. eggInfo.mutation .. ") on " .. eggInfo.island)
                 
                 -- Auto-purchase if enabled and egg matches filters
                 if Options.AutoBuyEgg.Value then
@@ -555,7 +555,7 @@ do
             for i, eggInfo in pairs(eggBuyerState.eggData.conveyorEggs) do
                 if eggInfo.object == eggObject then
                     table.remove(eggBuyerState.eggData.conveyorEggs, i)
-                    print("🥚 Egg removed: " .. eggInfo.name)
+                    -- print("🥚 Egg removed: " .. eggInfo.name)
                     break
                 end
             end
@@ -1652,26 +1652,26 @@ do
         if value then
             if dependenciesLoaded then
                 print("✅ [Auto Trade] Enabled - walk into trade zone with a pet")
-                Fluent:Notify({
-                    Title = "Auto Trade ON",
-                    Content = "Walk into trade zone with a held pet",
-                    Duration = 4
-                })
+                -- Fluent:Notify({
+                --     Title = "Auto Trade ON",
+                --     Content = "Walk into trade zone with a held pet",
+                --     Duration = 4
+                -- })
             else
                 print("⚠️ [Auto Trade] Dependencies not ready")
-                Fluent:Notify({
-                    Title = "Not Ready",
-                    Content = "Dependencies still loading, wait a moment",
-                    Duration = 3
-                })
+                -- Fluent:Notify({
+                --     Title = "Not Ready",
+                --     Content = "Dependencies still loading, wait a moment",
+                --     Duration = 3
+                -- })
             end
         else
-            print("❌ [Auto Trade] Disabled")
-            Fluent:Notify({
-                Title = "Auto Trade OFF",
-                Content = "Trades will not be auto-managed",
-                Duration = 3
-            })
+            -- print("❌ [Auto Trade] Disabled")
+            -- Fluent:Notify({
+            --     Title = "Auto Trade OFF",
+            --     Content = "Trades will not be auto-managed",
+            --     Duration = 3
+            -- })
         end
     end)
     
@@ -1960,7 +1960,7 @@ do
         Description = "Switch to a different trade zone",
         Values = {"Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5"},
         Multi = false,
-        Default = 5
+        Default = "Zone 5"
     })
     
     TradeZoneDropdown:OnChanged(function(value)
