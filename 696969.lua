@@ -1404,6 +1404,12 @@ end
 do
 	print("🔄 STARTING AUTO TRADE INTEGRATION 🔄")
 
+	-- Store references to global functions to avoid shadowing issues
+	local pairs = pairs
+	local tostring = tostring
+	local type = type
+	local table = table
+
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Players = game:GetService("Players")
 	local LocalPlayer = Players.LocalPlayer
@@ -1527,211 +1533,206 @@ do
 			return { "not a table" }
 		end
 		local keyValuePairs = {}
-		for k, v in pairs(tbl) do
-			table.insert(keyValuePairs, tostring(k) .. ": " .. tostring(v))
+		local success, err = pcall(function()
+			for k, v in pairs(tbl) do
+				local keyStr = tostring(k)
+				local valStr
+				local valSuccess, valErr = pcall(function()
+					if type(v) == "table" then
+						valStr = "[table]"
+					else
+						valStr = tostring(v)
+					end
+				end)
+				if not valSuccess then
+					valStr = "[error converting value]"
+				end
+				table.insert(keyValuePairs, keyStr .. ": " .. valStr)
+			end
+		end)
+		if not success then
+			return { "error iterating table: " .. tostring(err) }
 		end
 		return keyValuePairs
 	end
 
 	-- Trade Decision Logic
 	local function handleTrade(tradeData)
-	    local success, err = pcall(function()
-	        if not tradeData then
-	            print("⚠️ [Auto Trade] No trade data received")
-	            return
-            end
-
-	        if type(tradeData) ~= "table" then
-	            print("⚠️ [Auto Trade] Invalid trade data type: " .. type(tradeData))
-	            return
-            end
-
-	if not tradeData.data then
-	   -- This is likely a bargain response or other event, not a trade offer
-	   print("📨 [Auto Trade] Trade response received (not an offer)")
-	if type(tradeData) == "table" then
-	       local keyVals = getKeyValues(tradeData)
-	       if keyVals and type(keyVals) == "table" then
-	               print("🔍 [Debug] Response data:", table.concat(keyVals, ", "))
-                    end
-	       end
-                return
-            end
-
-            print("📨 [Auto Trade] Trade offer received")
-
-		if not autoTradeState.enabled or not dependenciesLoaded then
-			print("⚠️ [Auto Trade] Ignoring - auto trade disabled or not ready")
-			return
-		end
-
-		local data = tradeData.data
-
-		if not data.HoldPet or not data.TradePet then
-			print("⚠️ [Auto Trade] Invalid trade data - missing HoldPet or TradePet")
-			print("🔍 [Debug] data.HoldPet:", data.HoldPet)
-			print("🔍 [Debug] data.TradePet:", data.TradePet)
-			print("🔍 [Debug] data keys:", table.concat(getKeys(data), ", "))
-			return
-		end
-
-		autoTradeState.currentTrade = data
-		autoTradeState.tradeCount = autoTradeState.tradeCount + 1
-		autoTradeState.lastTradeTime = os.time() -- Update last trade time
-		print("📊 [Auto Trade] Evaluating trade #" .. autoTradeState.tradeCount)
-
-		local playerPet = data.HoldPet
-		local traderPets = data.TradePet
-		local bargainTime = data.BargainTime or 0
-
-		-- Auto-save held pet UID
-		if playerPet and playerPet.UID then
-			if Options.HeldPetUID and Options.HeldPetUID.Value ~= playerPet.UID then
-				Options.HeldPetUID:SetValue(playerPet.UID)
-				print("💾 [Auto Trade] Saved held pet UID: " .. playerPet.UID)
-			end
-		end
-
-		local playerValue = getPetValue(playerPet)
-		print(
-			"💰 [Auto Trade] Your pet value: "
-				.. formatNumber(playerValue)
-				.. " (Type: "
-				.. tostring(playerPet.T)
-				.. ", Mutation: "
-				.. tostring(playerPet.M)
-				.. ")"
-		)
-
-		local traderValue = 0
-		for i, pet in pairs(traderPets) do
-			local petValue = getPetValue(pet)
-			print(
-				"💰 [Auto Trade] Trader pet #"
-					.. i
-					.. " value: "
-					.. formatNumber(petValue)
-					.. " (Type: "
-					.. tostring(pet.T)
-					.. ", Mutation: "
-					.. tostring(pet.M)
-					.. ")"
-			)
-			traderValue = traderValue + petValue
-		end
-		print("💰 [Auto Trade] Total trader value: " .. formatNumber(traderValue))
-
-		local fairnessRatio = calculateFairnessRatio(playerPet, traderPets)
-		print("📊 [Auto Trade] Fairness ratio: " .. string.format("%.1f%%", fairnessRatio * 100))
-
-		-- Wait a bit to prevent spam
-		task.wait(0.5)
-
-		-- Auto Bargain
-		if Options.AutoBargain and Options.AutoBargain.Value and bargainTime < 2 then
-			local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
-			if fairnessRatio < minFairnessPercent then
-				print("🎲 [Auto Trade] Bargaining... (BargainTime: " .. tostring(bargainTime) .. ")")
-				TradeRE:FireServer({ event = "bargain" })
-				print("✅ [Auto Trade] Bargain event sent, waiting for server response...")
+		local success, err = pcall(function()
+			if not tradeData then
+				print("⚠️ [Auto Trade] No trade data received")
 				return
 			end
-		end
 
-		-- Check for auto-accept by pet name first (highest priority)
-		if Options.AutoAcceptPetNameToggle and Options.AutoAcceptPetNameToggle.Value then
-			local selectedPetNames = Options.AutoAcceptPetName and Options.AutoAcceptPetName.Value or {}
+			if type(tradeData) ~= "table" then
+				print("⚠️ [Auto Trade] Invalid trade data type: " .. type(tradeData))
+				return
+			end
+
+			if not tradeData.data then
+				-- This is likely a bargain response or other event, not a trade offer
+				print("📨 [Auto Trade] Trade response received (not an offer)")
+				if type(tradeData) == "table" then
+					local keyVals = getKeyValues(tradeData)
+					if keyVals and type(keyVals) == "table" then
+						print("🔍 [Debug] Response data:", table.concat(keyVals, ", "))
+					end
+				end
+				return
+			end
+
+			print("📨 [Auto Trade] Trade offer received")
+
+			if not autoTradeState.enabled or not dependenciesLoaded then
+				print("⚠️ [Auto Trade] Ignoring - auto trade disabled or not ready")
+				return
+			end
+
+			local data = tradeData.data
+
+			if not data.HoldPet or not data.TradePet then
+				print("⚠️ [Auto Trade] Invalid trade data - missing HoldPet or TradePet")
+				print("🔍 [Debug] data.HoldPet:", data.HoldPet)
+				print("🔍 [Debug] data.TradePet:", data.TradePet)
+				print("🔍 [Debug] data keys:", table.concat(getKeys(data), ", "))
+				return
+			end
+
+			autoTradeState.currentTrade = data
+			autoTradeState.tradeCount = autoTradeState.tradeCount + 1
+			autoTradeState.lastTradeTime = os.time() -- Update last trade time
+			print("📊 [Auto Trade] Evaluating trade #" .. autoTradeState.tradeCount)
+
+			local playerPet = data.HoldPet
+			local traderPets = data.TradePet
+			local bargainTime = data.BargainTime or 0
+
+			-- Auto-save held pet UID
+			if playerPet and playerPet.UID then
+				if Options.HeldPetUID and Options.HeldPetUID.Value ~= playerPet.UID then
+					Options.HeldPetUID:SetValue(playerPet.UID)
+					print("💾 [Auto Trade] Saved held pet UID: " .. playerPet.UID)
+				end
+			end
+
+			local playerValue = getPetValue(playerPet)
+			print(
+				"💰 [Auto Trade] Your pet value: "
+					.. formatNumber(playerValue)
+					.. " (Type: "
+					.. tostring(playerPet.T)
+					.. ", Mutation: "
+					.. tostring(playerPet.M)
+					.. ")"
+			)
+
+			local traderValue = 0
 			for i, pet in pairs(traderPets) do
-				local petType = pet.T or pet:GetAttribute("T")
-				for petName, isSelected in pairs(selectedPetNames) do
-					if isSelected and tostring(petType):lower() == tostring(petName):lower() then
-						print("✅ [Auto Trade] Auto-accepting pet by name: " .. petType)
-						TradeRE:FireServer({ event = "accept" })
-						autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
-						return
+				local petValue = getPetValue(pet)
+				print(
+					"💰 [Auto Trade] Trader pet #"
+						.. i
+						.. " value: "
+						.. formatNumber(petValue)
+						.. " (Type: "
+						.. tostring(pet.T)
+						.. ", Mutation: "
+						.. tostring(pet.M)
+						.. ")"
+				)
+				traderValue = traderValue + petValue
+			end
+			print("💰 [Auto Trade] Total trader value: " .. formatNumber(traderValue))
+
+			local fairnessRatio = calculateFairnessRatio(playerPet, traderPets)
+			print("📊 [Auto Trade] Fairness ratio: " .. string.format("%.1f%%", fairnessRatio * 100))
+
+			-- Wait a bit to prevent spam
+			task.wait(0.5)
+
+			-- Auto Bargain
+			if Options.AutoBargain and Options.AutoBargain.Value and bargainTime < 2 then
+				local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
+				if fairnessRatio < minFairnessPercent then
+					print("🎲 [Auto Trade] Bargaining... (BargainTime: " .. tostring(bargainTime) .. ")")
+					TradeRE:FireServer({ event = "bargain" })
+					print("✅ [Auto Trade] Bargain event sent, waiting for server response...")
+					return
+				end
+			end
+
+			-- Check for auto-accept by pet name first (highest priority)
+			if Options.AutoAcceptPetNameToggle and Options.AutoAcceptPetNameToggle.Value then
+				local selectedPetNames = Options.AutoAcceptPetName and Options.AutoAcceptPetName.Value or {}
+				for i, pet in pairs(traderPets) do
+					local petType = pet.T or pet:GetAttribute("T")
+					for petName, isSelected in pairs(selectedPetNames) do
+						if isSelected and tostring(petType):lower() == tostring(petName):lower() then
+							print("✅ [Auto Trade] Auto-accepting pet by name: " .. petType)
+							TradeRE:FireServer({ event = "accept" })
+							autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+							return
+						end
 					end
 				end
 			end
-		end
 
-		-- Check fairness threshold and acceptance mode
-		local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
-		local acceptanceMode = Options.AcceptanceMode and Options.AcceptanceMode.Value or "Fairness Only"
+			-- Check fairness threshold and acceptance mode
+			local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
+			local acceptanceMode = Options.AcceptanceMode and Options.AcceptanceMode.Value or "Fairness Only"
 
-		print(
-			"📊 [Auto Trade] Final check - BargainTime: "
-				.. tostring(bargainTime)
-				.. ", Fairness: "
-				.. string.format("%.1f%%", fairnessRatio * 100)
-				.. ", Min: "
-				.. string.format("%.1f%%", minFairnessPercent * 100)
-				.. ", Mode: "
-				.. acceptanceMode
-		)
+			print(
+				"📊 [Auto Trade] Final check - BargainTime: "
+					.. tostring(bargainTime)
+					.. ", Fairness: "
+					.. string.format("%.1f%%", fairnessRatio * 100)
+					.. ", Min: "
+					.. string.format("%.1f%%", minFairnessPercent * 100)
+					.. ", Mode: "
+					.. acceptanceMode
+			)
 
-		-- Check if fairness passes
-		local acceptByFairness = fairnessRatio >= minFairnessPercent
+			-- Check if fairness passes
+			local acceptByFairness = fairnessRatio >= minFairnessPercent
 
-		-- Check if any pet meets high-value threshold
-		local acceptByValue = false
-		local acceptThreshold = Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0
-		if acceptThreshold > 0 then
-			for i, pet in pairs(traderPets) do
-				local petValue = getPetValue(pet)
-				if petValue >= acceptThreshold then
-					acceptByValue = true
-					print(
-						"✅ [Auto Trade] High-value pet found #"
-							.. i
-							.. " ("
-							.. formatNumber(petValue)
-							.. " >= "
-							.. formatNumber(acceptThreshold)
-							.. ")"
-					)
-					break
-				end
-			end
-		end
-
-		-- Determine if trade should be accepted based on mode
-		local shouldAccept = false
-		if acceptanceMode == "Fairness Only" then
-			shouldAccept = acceptByFairness
-		elseif acceptanceMode == "Pet Value Only" then
-			shouldAccept = acceptByValue
-		elseif acceptanceMode == "Either" then
-			shouldAccept = acceptByFairness or acceptByValue
-		end
-
-		if not shouldAccept then
-			print("❌ [Auto Trade] Trade not meeting acceptance criteria - Declining (Mode: " .. acceptanceMode .. ")")
-			TradeRE:FireServer({ event = "decline" })
-			autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
-
-			-- Re-focus pet after declining
-			local CharacterRE = ReplicatedStorage:FindFirstChild("Remote")
-				and ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
-			if CharacterRE then
-				CharacterRE:FireServer("Focus")
-				local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
-				if petUID ~= "" then
-					task.wait(1)
-					CharacterRE:FireServer("Focus", petUID)
+			-- Check if any pet meets high-value threshold
+			local acceptByValue = false
+			local acceptThreshold = Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0
+			if acceptThreshold > 0 then
+				for i, pet in pairs(traderPets) do
+					local petValue = getPetValue(pet)
+					if petValue >= acceptThreshold then
+						acceptByValue = true
+						print(
+							"✅ [Auto Trade] High-value pet found #"
+								.. i
+								.. " ("
+								.. formatNumber(petValue)
+								.. " >= "
+								.. formatNumber(acceptThreshold)
+								.. ")"
+						)
+						break
+					end
 				end
 			end
 
-			return
-		end
+			-- Determine if trade should be accepted based on mode
+			local shouldAccept = false
+			if acceptanceMode == "Fairness Only" then
+				shouldAccept = acceptByFairness
+			elseif acceptanceMode == "Pet Value Only" then
+				shouldAccept = acceptByValue
+			elseif acceptanceMode == "Either" then
+				shouldAccept = acceptByFairness or acceptByValue
+			end
 
-		if acceptByValue then
-			print("✅ [Auto Trade] Accepting due to high-value pet")
-		end
-
-		-- Check if trader offers better value
-		if Options.RequireBetterValue and Options.RequireBetterValue.Value then
-			if traderValue < playerValue then
-				print("❌ [Auto Trade] Trader value too low")
+			if not shouldAccept then
+				print(
+					"❌ [Auto Trade] Trade not meeting acceptance criteria - Declining (Mode: "
+						.. acceptanceMode
+						.. ")"
+				)
 				TradeRE:FireServer({ event = "decline" })
 				autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
 
@@ -1749,24 +1750,50 @@ do
 
 				return
 			end
-		end
 
-		-- Accept trade
-		print("✅ [Auto Trade] Accepting (Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ")")
-		TradeRE:FireServer({ event = "accept" })
-		autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+			if acceptByValue then
+				print("✅ [Auto Trade] Accepting due to high-value pet")
+			end
 
-		-- Clear held pet UID after accepting trade (pet is now traded away)
-		if Options.HeldPetUID then
-			Options.HeldPetUID:SetValue("")
-			print("🗑️ [Auto Trade] Cleared held pet UID (pet traded)")
+			-- Check if trader offers better value
+			if Options.RequireBetterValue and Options.RequireBetterValue.Value then
+				if traderValue < playerValue then
+					print("❌ [Auto Trade] Trader value too low")
+					TradeRE:FireServer({ event = "decline" })
+					autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
+
+					-- Re-focus pet after declining
+					local CharacterRE = ReplicatedStorage:FindFirstChild("Remote")
+						and ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
+					if CharacterRE then
+						CharacterRE:FireServer("Focus")
+						local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
+						if petUID ~= "" then
+							task.wait(1)
+							CharacterRE:FireServer("Focus", petUID)
+						end
+					end
+
+					return
+				end
+			end
+
+			-- Accept trade
+			print("✅ [Auto Trade] Accepting (Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ")")
+			TradeRE:FireServer({ event = "accept" })
+			autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+
+			-- Clear held pet UID after accepting trade (pet is now traded away)
+			if Options.HeldPetUID then
+				Options.HeldPetUID:SetValue("")
+				print("🗑️ [Auto Trade] Cleared held pet UID (pet traded)")
+			end
+		end)
+
+		if not success then
+			print("❌ [Auto Trade] Error in handleTrade: " .. tostring(err))
+			warn(err)
 		end
-        end)
-        
-        if not success then
-            print("❌ [Auto Trade] Error in handleTrade: " .. tostring(err))
-            warn(err)
-        end
 	end
 
 	-- Set up listener after handleTrade is defined
@@ -2556,4 +2583,3 @@ end
 -- Start auto-save setup
 -- Config is already loaded above, this section just handles auto-saving on changes
 task.spawn(setupAutoSave)
-                          
