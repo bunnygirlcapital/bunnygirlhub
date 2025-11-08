@@ -1961,15 +1961,25 @@ do
                 local fiveMinutes = 5 * 60 -- 5 minutes in seconds
                 
                 if timeSinceLastTrade >= fiveMinutes then
-                    local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
-                    if petUID ~= "" then
-                        print("⏰ [Auto Re-equip] 5 minutes since last trade - re-equipping pet")
-                        equipPet(petUID)
-                        autoTradeState.lastTradeTime = os.time() -- Reset timer after re-equipping
-                    else
-                        print("⚠️ [Auto Re-equip] No saved pet UID to re-equip")
-                    end
-                end
+                local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
+                if petUID ~= "" then
+                print("⏰ [Auto Re-equip] 5 minutes since last trade - re-equipping pet")
+                
+                local CharacterRE = ReplicatedStorage:FindFirstChild("Remote") and 
+                                       ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
+                if CharacterRE then
+                        CharacterRE:FireServer("Focus")
+                            task.wait(0.1)
+                             CharacterRE:FireServer("Focus", petUID)
+                         else
+                             equipPet(petUID)
+                         end
+                         
+                         autoTradeState.lastTradeTime = os.time() -- Reset timer after re-equipping
+                     else
+                         print("⚠️ [Auto Re-equip] No saved pet UID to re-equip")
+                     end
+                 end
             end
         end
         
