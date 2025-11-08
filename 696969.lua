@@ -1527,18 +1527,19 @@ do
         
         -- Auto Bargain
         if Options.AutoBargain and Options.AutoBargain.Value and bargainTime < 2 then
-        if fairnessRatio < (Options.MinFairness and Options.MinFairness.Value or 0) then
-        print("🎲 [Auto Trade] Bargaining... (BargainTime: " .. tostring(bargainTime) .. ")")
-        TradeRE:FireServer({event = "bargain"})
-        print("✅ [Auto Trade] Bargain event sent, waiting for server response...")
+            local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
+            if fairnessRatio < minFairnessPercent then
+                print("🎲 [Auto Trade] Bargaining... (BargainTime: " .. tostring(bargainTime) .. ")")
+                TradeRE:FireServer({event = "bargain"})
+            print("✅ [Auto Trade] Bargain event sent, waiting for server response...")
             return
             end
         end
         
         -- Check fairness threshold
-        local minFairness = (Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0) / 100
-        print("📊 [Auto Trade] Final check - BargainTime: " .. tostring(bargainTime) .. ", Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ", Min: " .. string.format("%.1f%%", Options.MinFairnessPercentage.Value))
-        if fairnessRatio < minFairness then
+        local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
+        print("📊 [Auto Trade] Final check - BargainTime: " .. tostring(bargainTime) .. ", Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ", Min: " .. string.format("%.1f%%", minFairnessPercent * 100))
+         if fairnessRatio < minFairnessPercent then
             -- Check for high-value pet override
             local acceptThreshold = Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0
             if acceptThreshold > 0 then
@@ -1637,25 +1638,33 @@ do
         end
     end)
     
-    -- Initialize separate option for percentage value
-    Options.MinFairnessPercentage = { Value = 90 }
+    -- Initialize MinFairnessPercentage with default of 0.9 (90%)
+    if not Options.MinFairnessPercentage then
+         Options.MinFairnessPercentage = { Value = 0.9 }
+    end
 
     local MinFairness = TradeSection:AddInput("MinFairness", {
-        Title = "Min Fairness %",
-        Description = "Minimum fairness ratio to accept (0 = fair trade)",
-        Default = "90",
-        Numeric = true,
+    Title = "Min Fairness %",
+    Description = "Minimum fairness ratio to accept trades (0-100)",
+    Default = "90",
+    Numeric = true,
         Finished = false,
-        Placeholder = "90"
+         Placeholder = "90"
     })
 
     MinFairness:OnChanged(function(value)
-        local numValue = tonumber(value) or 0
-    -- Store percentage value in both MinFairness and MinFairnessPercentage
-    Options.MinFairness.Value = numValue
-    Options.MinFairnessPercentage.Value = numValue
-    print("📊 [MinFairness] Changed to: " .. tostring(numValue) .. "%")
-    end)
+        local numValue = tonumber(value) or 90
+        -- Clamp value to 0-100 range
+        numValue = math.max(0, math.min(100, numValue))
+        
+         -- Update MinFairness in options to the 0-100 value
+         Options.MinFairness.Value = numValue
+         
+         -- Calculate MinFairnessPercentage (0-1 range for calculations)
+         Options.MinFairnessPercentage.Value = numValue / 100
+         
+         print("📊 [MinFairness] Changed to: " .. tostring(numValue) .. "% (0-1: " .. string.format("%.2f", Options.MinFairnessPercentage.Value) .. ")")
+     end)
     
     local AutoAcceptPetValue = TradeSection:AddInput("AutoAcceptPetValue", {
     Title = "Auto Accept Pet Value",
@@ -2183,17 +2192,17 @@ end)
 
 -- Debug: Check loaded MinFairness values
 print("🔍 [Config Load] MinFairness loaded as:", Options.MinFairness and Options.MinFairness.Value or "nil")
-print("🔍 [Config Load] MinFairnessPercentage loaded as:", Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value .. "%" or "nil")
+print("🔍 [Config Load] MinFairnessPercentage loaded as:", Options.MinFairnessPercentage and string.format("%.2f", Options.MinFairnessPercentage.Value) or "nil")
 
 -- Set default MinFairnessPercentage if not loaded or is 0
 if not Options.MinFairnessPercentage or not Options.MinFairnessPercentage.Value or Options.MinFairnessPercentage.Value == 0 then
-    Options.MinFairnessPercentage.Value = 90
-    print("🔄 [Config Load] Set MinFairnessPercentage default to 90%")
+    Options.MinFairnessPercentage.Value = 0.9
+    print("🔄 [Config Load] Set MinFairnessPercentage default to 0.9 (90%)")
 end
 
--- Update input display to match loaded percentage
+-- Update input display to match loaded value (convert 0-1 range back to 0-100)
 if Options.MinFairness then
-    local displayValue = tostring(Options.MinFairnessPercentage.Value)
+    local displayValue = tostring(math.floor((Options.MinFairnessPercentage.Value or 0.9) * 100))
     Options.MinFairness:SetValue(displayValue)
 end
 
