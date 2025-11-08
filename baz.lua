@@ -34,6 +34,15 @@ local Tabs = {
 local Options = Fluent.Options
 
 do
+    Fluent:Notify({
+        Title = "Notification",
+        Content = "This is a notification",
+        SubContent = "SubContent", -- Optional
+        Duration = 5 -- Set to nil to make the notification not disappear
+    })
+
+
+
     Tabs.Main:AddParagraph({
         Title = "Paragraph",
         Content = "This is a paragraph.\nSecond line!"
@@ -678,11 +687,11 @@ do
         Description = "Begin monitoring for eggs",
         Callback = function()
             startEggMonitoring()
-            -- Fluent:Notify({
-            --     Title = "Monitoring Started",
-            --     Content = "Now scanning for eggs",
-            --     Duration = 3
-            -- })
+            Fluent:Notify({
+                Title = "Monitoring Started",
+                Content = "Now scanning for eggs",
+                Duration = 3
+            })
         end
     })
     
@@ -691,11 +700,11 @@ do
         Description = "Stop monitoring for eggs",
         Callback = function()
             stopEggMonitoring()
-            -- Fluent:Notify({
-            --     Title = "Monitoring Stopped",
-            --     Content = "Stopped scanning for eggs",
-            --     Duration = 3
-            -- })
+            Fluent:Notify({
+                Title = "Monitoring Stopped",
+                Content = "Stopped scanning for eggs",
+                Duration = 3
+            })
         end
     })
     
@@ -706,11 +715,11 @@ do
             eggBuyerState.eggData.conveyorEggs = findEggsInReplicatedStorage()
             local eggs = eggBuyerState.eggData.conveyorEggs
             local matching = findMatchingEggs()
-            -- Fluent:Notify({
-            --     Title = "Scan Complete",
-            --     Content = string.format("Found %d eggs, %d matching filters", #eggs, #matching),
-            --     Duration = 5
-            -- })
+            Fluent:Notify({
+                Title = "Scan Complete",
+                Content = string.format("Found %d eggs, %d matching filters", #eggs, #matching),
+                Duration = 5
+            })
         end
     })
     
@@ -1264,11 +1273,11 @@ do
                 startAutoBuyLoop()
                 print("🔍 loopTask after start: " .. tostring(foodBuyerState.loopTask))
                 local foodList = table.concat(selectedFoods, ", ")
-                -- Fluent:Notify({
-                --     Title = "Auto Buy Enabled",
-                --     Content = "Automatically purchasing " .. foodList .. " every 5 minutes",
-                --     Duration = 3
-                -- })
+                Fluent:Notify({
+                    Title = "Auto Buy Enabled",
+                    Content = "Automatically purchasing " .. foodList .. " every 5 minutes",
+                    Duration = 3
+                })
                 print("✅ Auto buy loop started, notification sent")
             else
                 print("🛑 Toggle is OFF, stopping loop...")
@@ -1613,7 +1622,7 @@ do
     local MinFairness = TradeSection:AddSlider("MinFairness", {
         Title = "Min Fairness %",
         Description = "Minimum fairness ratio to accept (0 = fair trade)",
-        Default = 90,
+        Default = 0,
         Min = -100,
         Max = 100,
         Rounding = 1
@@ -1787,7 +1796,7 @@ do
         task.wait(2) -- Wait for character and SaveManager to load
         if Options.TeleportToZone and Options.TeleportToZone.Value then
             print("🔄 [Teleport] Auto-teleport enabled, teleporting...")
-            local success = teleportToTradeZone(5)
+            local success = teleportToTradeZone(1)
             if success then
                 print("✅ [Teleport] Auto-teleport successful")
                 
@@ -1806,10 +1815,10 @@ do
         end
     end)
     
-    -- Background task to re-equip pet after 5 minutes of inactivity
+    -- Background task to re-equip pet after 30 minutes of inactivity
     task.spawn(function()
         task.wait(5) -- Wait for script to fully initialize
-        print("🕐 [Auto Re-equip] Started inactivity monitor (5min timeout)")
+        print("🕐 [Auto Re-equip] Started inactivity monitor (30min timeout)")
         
         while not Fluent.Unloaded do
             task.wait(60) -- Check every minute
@@ -1817,12 +1826,12 @@ do
             -- Only check if auto trade is enabled
             if autoTradeState.enabled then
                 local timeSinceLastTrade = os.time() - autoTradeState.lastTradeTime
-                local fiveMinutes = 5 * 60 -- 5 minutes in seconds
+                local thirtyMinutes = 30 * 60 -- 30 minutes in seconds
                 
-                if timeSinceLastTrade >= fiveMinutes then
+                if timeSinceLastTrade >= thirtyMinutes then
                     local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
                     if petUID ~= "" then
-                        print("⏰ [Auto Re-equip] 5 minutes since last trade - re-equipping pet")
+                        print("⏰ [Auto Re-equip] 30 minutes since last trade - re-equipping pet")
                         equipPet(petUID)
                         autoTradeState.lastTradeTime = os.time() -- Reset timer after re-equipping
                     else
@@ -1845,7 +1854,7 @@ do
         Description = "Switch to a different trade zone",
         Values = {"Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5"},
         Multi = false,
-        Default = 5
+        Default = 1
     })
     
     TradeZoneDropdown:OnChanged(function(value)
@@ -1994,19 +2003,19 @@ do
             })
         end)
         
-        -- if success then
-        --     Fluent:Notify({
-        --         Title = "Success",
-        --         Content = "Webhook sent!",
-        --         Duration = 3
-        --     })
-        -- else
-        --     Fluent:Notify({
-        --         Title = "Error",
-        --         Content = "Failed to send webhook",
-        --         Duration = 3
-        --     })
-        -- end
+        if success then
+            Fluent:Notify({
+                Title = "Success",
+                Content = "Webhook sent!",
+                Duration = 3
+            })
+        else
+            Fluent:Notify({
+                Title = "Error",
+                Content = "Failed to send webhook",
+                Duration = 3
+            })
+        end
     end
     
     WebhookSection:AddButton({
