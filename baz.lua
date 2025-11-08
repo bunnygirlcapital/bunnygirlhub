@@ -1459,6 +1459,16 @@ do
         return keys
     end
 
+    -- Helper function to get key-value pairs as strings
+    local function getKeyValues(tbl)
+        if not tbl or type(tbl) ~= "table" then return {"not a table"} end
+        local pairs = {}
+        for k, v in pairs(tbl) do
+            table.insert(pairs, tostring(k) .. ": " .. tostring(v))
+        end
+        return pairs
+    end
+
     -- Trade Decision Logic
     local function handleTrade(tradeData)
         if not tradeData then
@@ -1469,7 +1479,7 @@ do
         if not tradeData.data then
             -- This is likely a bargain response or other event, not a trade offer
             print("📨 [Auto Trade] Trade response received (not an offer)")
-            print("🔍 [Debug] Response keys:", table.concat(getKeys(tradeData), ", "))
+            print("🔍 [Debug] Response data:", table.concat(getKeyValues(tradeData), ", "))
             return
         end
 
