@@ -1536,11 +1536,27 @@ do
             end
         end
         
-        -- Check fairness threshold and acceptance mode
-        local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
-        local acceptanceMode = Options.AcceptanceMode and Options.AcceptanceMode.Value or "Fairness Only"
-        
-        print("📊 [Auto Trade] Final check - BargainTime: " .. tostring(bargainTime) .. ", Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ", Min: " .. string.format("%.1f%%", minFairnessPercent * 100) .. ", Mode: " .. acceptanceMode)
+        -- Check for auto-accept by pet name first (highest priority)
+        if Options.AutoAcceptPetNameToggle and Options.AutoAcceptPetNameToggle.Value then
+            local selectedPetNames = Options.AutoAcceptPetName and Options.AutoAcceptPetName.Value or {}
+            for i, pet in pairs(traderPets) do
+                local petType = pet.T or pet:GetAttribute("T")
+                 for petName, isSelected in pairs(selectedPetNames) do
+                     if isSelected and tostring(petType):lower() == tostring(petName):lower() then
+                         print("✅ [Auto Trade] Auto-accepting pet by name: " .. petType)
+                         TradeRE:FireServer({event = "accept"})
+                         autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+                         return
+                     end
+                 end
+             end
+         end
+         
+         -- Check fairness threshold and acceptance mode
+         local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
+         local acceptanceMode = Options.AcceptanceMode and Options.AcceptanceMode.Value or "Fairness Only"
+         
+         print("📊 [Auto Trade] Final check - BargainTime: " .. tostring(bargainTime) .. ", Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ", Min: " .. string.format("%.1f%%", minFairnessPercent * 100) .. ", Mode: " .. acceptanceMode)
         
         -- Check if fairness passes
         local acceptByFairness = fairnessRatio >= minFairnessPercent
@@ -1688,14 +1704,28 @@ do
     end)
     
     local AcceptanceMode = TradeSection:AddDropdown("AcceptanceMode", {
-         Title = "Acceptance Mode",
-         Description = "How to decide whether to accept trades",
-         Values = {"Fairness Only", "Pet Value Only", "Either"},
-         Multi = false,
-         Default = 1
-     })
-     
-     local AutoAcceptPetValue = TradeSection:AddInput("AutoAcceptPetValue", {
+    Title = "Acceptance Mode",
+    Description = "How to decide whether to accept trades",
+    Values = {"Fairness Only", "Pet Value Only", "Either"},
+    Multi = false,
+    Default = 1
+    })
+    
+    local AutoAcceptPetNameToggle = TradeSection:AddToggle("AutoAcceptPetNameToggle", {
+          Title = "Auto Accept Pet Name",
+          Description = "Automatically accept trades for specific pet names",
+          Default = false
+      })
+      
+      local AutoAcceptPetName = TradeSection:AddDropdown("AutoAcceptPetName", {
+          Title = "Select Pet Name",
+          Description = "Which pet to auto-accept",
+          Values = {"Toothless"},
+          Multi = true,
+          Default = {"Toothless"}
+      })
+      
+      local AutoAcceptPetValue = TradeSection:AddInput("AutoAcceptPetValue", {
     Title = "Auto Accept Pet Value",
     Description = "Accept trade if any trader pet >= this value (0 = disabled)",
     Default = "1000000",
