@@ -1548,6 +1548,19 @@ do
         local minFairness = Options.MinFairness and Options.MinFairness.Value or 0
         print("📊 [Auto Trade] Final check - BargainTime: " .. tostring(bargainTime) .. ", Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ", Min: " .. string.format("%.1f%%", minFairness * 100))
         if fairnessRatio < minFairness then
+            -- Check for high-value pet override
+            local acceptThreshold = Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0
+            if acceptThreshold > 0 then
+                for i, pet in pairs(traderPets) do
+                    local petValue = getPetValue(pet)
+                    if petValue >= acceptThreshold then
+                        print("✅ [Auto Trade] Accepting due to high-value pet #" .. i .. " (" .. formatNumber(petValue) .. " >= " .. formatNumber(acceptThreshold) .. ")")
+                        TradeRE:FireServer({event = "accept"})
+                        autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+                        return
+                    end
+                end
+            end
             print("❌ [Auto Trade] Trade too unfair - Declining")
             TradeRE:FireServer({event = "decline"})
             autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
@@ -1645,7 +1658,22 @@ do
     MinFairness:OnChanged(function(value)
     -- Convert percentage to decimal
     Options.MinFairness.Value = value / 100
-        print("📊 [MinFairness] Changed to: " .. tostring(value) .. "% (" .. tostring(Options.MinFairness.Value) .. ")")
+    print("📊 [MinFairness] Changed to: " .. tostring(value) .. "% (" .. tostring(Options.MinFairness.Value) .. ")")
+    end)
+    
+    local AutoAcceptPetValue = TradeSection:AddInput("AutoAcceptPetValue", {
+        Title = "Auto Accept Pet Value",
+        Description = "Accept trade if any trader pet >= this value (0 = disabled)",
+        Default = "0",
+        Numeric = true,
+        Finished = false,
+        Placeholder = "1000000"
+    })
+    
+    AutoAcceptPetValue:OnChanged(function(value)
+        local numValue = tonumber(value) or 0
+        Options.AutoAcceptPetValue.Value = numValue
+        print("💎 [AutoAcceptPetValue] Set to: " .. formatNumber(numValue))
     end)
     
     local RequireBetterValue = TradeSection:AddToggle("RequireBetterValue", {
