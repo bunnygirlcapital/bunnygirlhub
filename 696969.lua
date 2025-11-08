@@ -1622,7 +1622,7 @@ do
     local MinFairness = TradeSection:AddSlider("MinFairness", {
         Title = "Min Fairness %",
         Description = "Minimum fairness ratio to accept (0 = fair trade)",
-        Default = 0,
+        Default = 90,
         Min = -100,
         Max = 100,
         Rounding = 1
@@ -1796,7 +1796,7 @@ do
         task.wait(2) -- Wait for character and SaveManager to load
         if Options.TeleportToZone and Options.TeleportToZone.Value then
             print("🔄 [Teleport] Auto-teleport enabled, teleporting...")
-            local success = teleportToTradeZone(1)
+            local success = teleportToTradeZone(5)
             if success then
                 print("✅ [Teleport] Auto-teleport successful")
                 
@@ -1815,10 +1815,10 @@ do
         end
     end)
     
-    -- Background task to re-equip pet after 30 minutes of inactivity
+    -- Background task to re-equip pet after 5 minutes of inactivity
     task.spawn(function()
         task.wait(5) -- Wait for script to fully initialize
-        print("🕐 [Auto Re-equip] Started inactivity monitor (30min timeout)")
+        print("🕐 [Auto Re-equip] Started inactivity monitor (5min timeout)")
         
         while not Fluent.Unloaded do
             task.wait(60) -- Check every minute
@@ -1826,12 +1826,12 @@ do
             -- Only check if auto trade is enabled
             if autoTradeState.enabled then
                 local timeSinceLastTrade = os.time() - autoTradeState.lastTradeTime
-                local thirtyMinutes = 30 * 60 -- 30 minutes in seconds
+                local fiveMinutes = 5 * 60 -- 5 minutes in seconds
                 
-                if timeSinceLastTrade >= thirtyMinutes then
+                if timeSinceLastTrade >= fiveMinutes then
                     local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
                     if petUID ~= "" then
-                        print("⏰ [Auto Re-equip] 30 minutes since last trade - re-equipping pet")
+                        print("⏰ [Auto Re-equip] 5 minutes since last trade - re-equipping pet")
                         equipPet(petUID)
                         autoTradeState.lastTradeTime = os.time() -- Reset timer after re-equipping
                     else
@@ -1854,7 +1854,7 @@ do
         Description = "Switch to a different trade zone",
         Values = {"Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5"},
         Multi = false,
-        Default = 1
+        Default = 5
     })
     
     TradeZoneDropdown:OnChanged(function(value)
