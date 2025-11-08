@@ -1537,8 +1537,9 @@ do
         
         -- Check fairness threshold
         local minFairness = Options.MinFairness and Options.MinFairness.Value or 0
+        print("📊 [Auto Trade] Final check - BargainTime: " .. tostring(bargainTime) .. ", Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ", Min: " .. string.format("%.1f%%", minFairness * 100))
         if fairnessRatio < minFairness then
-            print("❌ [Auto Trade] Trade too unfair (Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ")")
+            print("❌ [Auto Trade] Trade too unfair - Declining")
             TradeRE:FireServer({event = "decline"})
             autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
             return
