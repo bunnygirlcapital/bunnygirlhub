@@ -1604,7 +1604,7 @@ do
     local MinFairness = TradeSection:AddSlider("MinFairness", {
         Title = "Min Fairness %",
         Description = "Minimum fairness ratio to accept (0 = fair trade)",
-        Default = 0,
+        Default = 90,
         Min = -100,
         Max = 100,
         Rounding = 1
@@ -1635,7 +1635,7 @@ do
         Title = "Held Pet UID",
         Description = "Pet UID to auto-equip after teleport (detected automatically)",
         Default = "",
-        Placeholder = "ef1327451dd0459b904a3c7ae93ba486",
+        Placeholder = "",
         Numeric = false,
         Finished = true
     })
@@ -1799,7 +1799,7 @@ do
     -- Background task to re-equip pet after 30 minutes of inactivity
     task.spawn(function()
         task.wait(5) -- Wait for script to fully initialize
-        print("🕐 [Auto Re-equip] Started inactivity monitor (30min timeout)")
+        print("🕐 [Auto Re-equip] Started inactivity monitor (5min timeout)")
         
         while not Fluent.Unloaded do
             task.wait(60) -- Check every minute
@@ -1807,12 +1807,12 @@ do
             -- Only check if auto trade is enabled
             if autoTradeState.enabled then
                 local timeSinceLastTrade = os.time() - autoTradeState.lastTradeTime
-                local thirtyMinutes = 30 * 60 -- 30 minutes in seconds
+                local fiveMinutes = 30 * 5 -- 30 minutes in seconds
                 
-                if timeSinceLastTrade >= thirtyMinutes then
+                if timeSinceLastTrade >= fiveMinutes then
                     local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
                     if petUID ~= "" then
-                        print("⏰ [Auto Re-equip] 30 minutes since last trade - re-equipping pet")
+                        print("⏰ [Auto Re-equip] 5 minutes since last trade - re-equipping pet")
                         equipPet(petUID)
                         autoTradeState.lastTradeTime = os.time() -- Reset timer after re-equipping
                     else
