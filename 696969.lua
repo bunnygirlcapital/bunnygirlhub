@@ -1535,26 +1535,30 @@ do
 
 	-- Trade Decision Logic
 	local function handleTrade(tradeData)
-		if not tradeData then
-			print("⚠️ [Auto Trade] No trade data received")
-			return
-		end
+	    local success, err = pcall(function()
+	        if not tradeData then
+	            print("⚠️ [Auto Trade] No trade data received")
+	            return
+            end
 
-		if type(tradeData) ~= "table" then
-			print("⚠️ [Auto Trade] Invalid trade data type: " .. type(tradeData))
-			return
-		end
+	        if type(tradeData) ~= "table" then
+	            print("⚠️ [Auto Trade] Invalid trade data type: " .. type(tradeData))
+	            return
+            end
 
-		if not tradeData.data then
-			-- This is likely a bargain response or other event, not a trade offer
-			print("📨 [Auto Trade] Trade response received (not an offer)")
-			if type(tradeData) == "table" then
-				print("🔍 [Debug] Response data:", table.concat(getKeyValues(tradeData), ", "))
-			end
-			return
-		end
+	if not tradeData.data then
+	   -- This is likely a bargain response or other event, not a trade offer
+	   print("📨 [Auto Trade] Trade response received (not an offer)")
+	if type(tradeData) == "table" then
+	       local keyVals = getKeyValues(tradeData)
+	       if keyVals and type(keyVals) == "table" then
+	               print("🔍 [Debug] Response data:", table.concat(keyVals, ", "))
+                    end
+	       end
+                return
+            end
 
-		print("📨 [Auto Trade] Trade offer received")
+            print("📨 [Auto Trade] Trade offer received")
 
 		if not autoTradeState.enabled or not dependenciesLoaded then
 			print("⚠️ [Auto Trade] Ignoring - auto trade disabled or not ready")
@@ -1757,6 +1761,12 @@ do
 			Options.HeldPetUID:SetValue("")
 			print("🗑️ [Auto Trade] Cleared held pet UID (pet traded)")
 		end
+        end)
+        
+        if not success then
+            print("❌ [Auto Trade] Error in handleTrade: " .. tostring(err))
+            warn(err)
+        end
 	end
 
 	-- Set up listener after handleTrade is defined
