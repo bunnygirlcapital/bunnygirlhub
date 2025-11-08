@@ -1591,16 +1591,16 @@ do
          autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
          
              -- Re-focus pet after declining
-              local CharacterRE = ReplicatedStorage:FindFirstChild("Remote") and 
-                                 ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
-              if CharacterRE then
-                  CharacterRE:FireServer("Focus")
-                  local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
-                  if petUID ~= "" then
-                      task.wait(0.1)
-                      CharacterRE:FireServer("Focus", petUID)
-                  end
-              end
+             local CharacterRE = ReplicatedStorage:FindFirstChild("Remote") and 
+             ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
+             if CharacterRE then
+             CharacterRE:FireServer("Focus")
+             local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
+             if petUID ~= "" then
+             task.wait(1)
+             CharacterRE:FireServer("Focus", petUID)
+             end
+             end
               
               return
           end
@@ -1617,16 +1617,16 @@ do
         autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
         
             -- Re-focus pet after declining
-                local CharacterRE = ReplicatedStorage:FindFirstChild("Remote") and 
-                                    ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
-                 if CharacterRE then
-                     CharacterRE:FireServer("Focus")
-                     local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
-                     if petUID ~= "" then
-                         task.wait(0.1)
-                         CharacterRE:FireServer("Focus", petUID)
-                     end
-                 end
+            local CharacterRE = ReplicatedStorage:FindFirstChild("Remote") and 
+            ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
+            if CharacterRE then
+            CharacterRE:FireServer("Focus")
+            local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
+            if petUID ~= "" then
+            task.wait(1)
+            CharacterRE:FireServer("Focus", petUID)
+            end
+            end
                  
                  return
              end
@@ -1966,14 +1966,14 @@ do
                 print("⏰ [Auto Re-equip] 5 minutes since last trade - re-equipping pet")
                 
                 local CharacterRE = ReplicatedStorage:FindFirstChild("Remote") and 
-                                       ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
+                ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
                 if CharacterRE then
-                        CharacterRE:FireServer("Focus")
-                            task.wait(0.1)
-                             CharacterRE:FireServer("Focus", petUID)
-                         else
-                             equipPet(petUID)
-                         end
+                CharacterRE:FireServer("Focus")
+                task.wait(1)
+                CharacterRE:FireServer("Focus", petUID)
+                else
+                equipPet(petUID)
+                end
                          
                          autoTradeState.lastTradeTime = os.time() -- Reset timer after re-equipping
                      else
