@@ -1861,10 +1861,10 @@ do
 	local MinFairness = TradeSection:AddInput("MinFairness", {
 		Title = "Min Fairness %",
 		Description = "Minimum fairness ratio to accept trades (0-100)",
-		Default = "90",
+		Default = "200",
 		Numeric = true,
 		Finished = false,
-		Placeholder = "90",
+		Placeholder = "100",
 	})
 
 	MinFairness:OnChanged(function(value)
