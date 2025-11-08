@@ -1637,19 +1637,20 @@ do
         end
     end)
     
-    local MinFairness = TradeSection:AddSlider("MinFairness", {
-        Title = "Min Fairness %",
-        Description = "Minimum fairness ratio to accept (0 = fair trade)",
-        Default = 90,
-        Min = -100,
-        Max = 100,
-        Rounding = 1
+    local MinFairness = TradeSection:AddInput("MinFairness", {
+    Title = "Min Fairness %",
+    Description = "Minimum fairness ratio to accept (0 = fair trade)",
+    Default = "90",
+    Numeric = true,
+    Finished = false,
+    Placeholder = "90"
     })
     
     MinFairness:OnChanged(function(value)
-    -- Convert percentage to decimal
-    Options.MinFairness.Value = value / 100
-    print("📊 [MinFairness] Changed to: " .. tostring(value) .. "% (" .. tostring(Options.MinFairness.Value) .. ")")
+        local numValue = tonumber(value) or 0
+        -- Convert percentage to decimal
+        Options.MinFairness.Value = numValue / 100
+        print("📊 [MinFairness] Changed to: " .. tostring(numValue) .. "% (" .. tostring(Options.MinFairness.Value) .. ")")
     end)
     
     local AutoAcceptPetValue = TradeSection:AddInput("AutoAcceptPetValue", {
@@ -1788,17 +1789,17 @@ do
             task.wait(0.5) -- Wait for character to load
             local success = teleportToTradeZone(5)
             if success then
-                Fluent:Notify({
-                    Title = "Teleported",
-                    Content = "Teleported to Trade Zone 1",
-                    Duration = 3
-                })
+                -- Fluent:Notify({
+                --     Title = "Teleported",
+                --     Content = "Teleported to Trade Zone 1",
+                --     Duration = 3
+                -- })
             else
-                Fluent:Notify({
-                    Title = "Teleport Failed",
-                    Content = "Could not find trade zone - check console",
-                    Duration = 3
-                })
+                -- Fluent:Notify({
+                --     Title = "Teleport Failed",
+                --     Content = "Could not find trade zone - check console",
+                --     Duration = 3
+                -- })
             end
         end
     end)
@@ -1906,11 +1907,11 @@ do
                                ReplicatedStorage.Remote:FindFirstChild("TradeZoneRE")
             if TradeZoneRE then
                 TradeZoneRE:FireServer("Switch", zoneLevel)
-                Fluent:Notify({
-                    Title = "Zone Switched",
-                    Content = "Switched to Trade Zone " .. zoneLevel,
-                    Duration = 3
-                })
+                -- Fluent:Notify({
+                --     Title = "Zone Switched",
+                --     Content = "Switched to Trade Zone " .. zoneLevel,
+                --     Duration = 3
+                -- })
             end
         end
     end)
@@ -2182,8 +2183,16 @@ print("🔍 [Config Load] MinFairness loaded as:", Options.MinFairness and Optio
 -- Set default MinFairness if not loaded or is 0
 if not Options.MinFairness or not Options.MinFairness.Value or Options.MinFairness.Value == 0 then
     if Options.MinFairness then
-        Options.MinFairness:SetValue(90)  -- 90% as slider value
+        Options.MinFairness:SetValue("90")  -- 90% as input text
         print("🔄 [Config Load] Set MinFairness default to 90%")
+    end
+end
+
+-- Update input display to match loaded value
+if Options.MinFairness and Options.MinFairness.Value then
+    local displayValue = tostring(Options.MinFairness.Value * 100)
+    if Options.MinFairness.Value ~= 0.9 then  -- only if not default
+        Options.MinFairness:SetValue(displayValue)
     end
 end
 

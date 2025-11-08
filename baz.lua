@@ -1646,19 +1646,20 @@ do
         end
     end)
     
-    local MinFairness = TradeSection:AddSlider("MinFairness", {
-        Title = "Min Fairness %",
-        Description = "Minimum fairness ratio to accept (0 = fair trade)",
-        Default = 0,
-        Min = -100,
-        Max = 100,
-        Rounding = 1
+    local MinFairness = TradeSection:AddInput("MinFairness", {
+    Title = "Min Fairness %",
+    Description = "Minimum fairness ratio to accept (0 = fair trade)",
+    Default = "90",
+    Numeric = true,
+    Finished = false,
+    Placeholder = "90"
     })
     
     MinFairness:OnChanged(function(value)
-    -- Convert percentage to decimal
-    Options.MinFairness.Value = value / 100
-    print("📊 [MinFairness] Changed to: " .. tostring(value) .. "% (" .. tostring(Options.MinFairness.Value) .. ")")
+        local numValue = tonumber(value) or 0
+        -- Convert percentage to decimal
+    Options.MinFairness.Value = numValue / 100
+        print("📊 [MinFairness] Changed to: " .. tostring(numValue) .. "% (" .. tostring(Options.MinFairness.Value) .. ")")
     end)
     
     local AutoAcceptPetValue = TradeSection:AddInput("AutoAcceptPetValue", {
@@ -2191,8 +2192,16 @@ print("🔍 [Config Load] MinFairness loaded as:", Options.MinFairness and Optio
 -- Set default MinFairness if not loaded or is 0
 if not Options.MinFairness or not Options.MinFairness.Value or Options.MinFairness.Value == 0 then
     if Options.MinFairness then
-        Options.MinFairness:SetValue(90)  -- 90% as slider value
+        Options.MinFairness:SetValue("90")  -- 90% as input text
         print("🔄 [Config Load] Set MinFairness default to 90%")
+    end
+end
+
+-- Update input display to match loaded value
+if Options.MinFairness and Options.MinFairness.Value then
+    local displayValue = tostring(Options.MinFairness.Value * 100)
+    if Options.MinFairness.Value ~= 0.9 then  -- only if not default
+        Options.MinFairness:SetValue(displayValue)
     end
 end
 
