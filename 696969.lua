@@ -1920,13 +1920,13 @@ do
 
 	MinFairness:OnChanged(function(value)
 		local numValue = tonumber(value) or 90
-		-- Clamp value to 0-100 range
-		numValue = math.max(0, math.min(100, numValue))
+		-- Clamp value to 0-1000 range (allowing for values > 100%)
+		numValue = math.max(0, math.min(1000, numValue))
 
-		-- Update MinFairness in options to the 0-100 value
+		-- Update MinFairness in options to the 0-1000 value
 		Options.MinFairness.Value = numValue
 
-		-- Calculate MinFairnessPercentage (0-1 range for calculations)
+		-- Calculate MinFairnessPercentage (0-10 range for calculations, e.g., 200% = 2.0)
 		Options.MinFairnessPercentage.Value = numValue / 100
 
 		print(
