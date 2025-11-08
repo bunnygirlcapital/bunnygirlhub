@@ -1526,11 +1526,11 @@ do
 		if not tbl or type(tbl) ~= "table" then
 			return { "not a table" }
 		end
-		local pairs = {}
+		local keyValuePairs = {}
 		for k, v in pairs(tbl) do
-			table.insert(pairs, tostring(k) .. ": " .. tostring(v))
+			table.insert(keyValuePairs, tostring(k) .. ": " .. tostring(v))
 		end
-		return pairs
+		return keyValuePairs
 	end
 
 	-- Trade Decision Logic
