@@ -34,15 +34,6 @@ local Tabs = {
 local Options = Fluent.Options
 
 do
-    Fluent:Notify({
-        Title = "Notification",
-        Content = "This is a notification",
-        SubContent = "SubContent", -- Optional
-        Duration = 5 -- Set to nil to make the notification not disappear
-    })
-
-
-
     Tabs.Main:AddParagraph({
         Title = "Paragraph",
         Content = "This is a paragraph.\nSecond line!"
@@ -2003,19 +1994,19 @@ do
             })
         end)
         
-        if success then
-            Fluent:Notify({
-                Title = "Success",
-                Content = "Webhook sent!",
-                Duration = 3
-            })
-        else
-            Fluent:Notify({
-                Title = "Error",
-                Content = "Failed to send webhook",
-                Duration = 3
-            })
-        end
+        -- if success then
+        --     Fluent:Notify({
+        --         Title = "Success",
+        --         Content = "Webhook sent!",
+        --         Duration = 3
+        --     })
+        -- else
+        --     Fluent:Notify({
+        --         Title = "Error",
+        --         Content = "Failed to send webhook",
+        --         Duration = 3
+        --     })
+        -- end
     end
     
     WebhookSection:AddButton({
@@ -2142,6 +2133,17 @@ end)
 pcall(function()
     SaveManager:LoadAutoloadConfig()
 end)
+
+-- Debug: Check loaded MinFairness value
+print("🔍 [Config Load] MinFairness loaded as:", Options.MinFairness and Options.MinFairness.Value or "nil")
+
+-- Set default MinFairness if not loaded or is 0
+if not Options.MinFairness or not Options.MinFairness.Value or Options.MinFairness.Value == 0 then
+    if Options.MinFairness then
+        Options.MinFairness:SetValue(0.9)  -- 90% as decimal
+        print("🔄 [Config Load] Set MinFairness default to 90%")
+    end
+end
 
 Window:SelectTab(1)
 
