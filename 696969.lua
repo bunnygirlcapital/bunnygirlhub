@@ -1682,18 +1682,7 @@ do
 			-- Wait a bit to prevent spam
 			task.wait(0.5)
 
-			-- Auto Bargain
-			if Options.AutoBargain and Options.AutoBargain.Value and bargainTime < 2 then
-				local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
-				if fairnessRatio < minFairnessPercent then
-					print("🎲 [Auto Trade] Bargaining... (BargainTime: " .. tostring(bargainTime) .. ")")
-					TradeRE:FireServer({ event = "bargain" })
-					print("✅ [Auto Trade] Bargain event sent, waiting for server response...")
-					return
-				end
-			end
-
-			-- Check for auto-accept by pet name first (highest priority)
+			-- Check for auto-accept by pet name (highest priority)
 			if Options.AutoAcceptPetNameToggle and Options.AutoAcceptPetNameToggle.Value then
 				local selectedPetNames = Options.AutoAcceptPetName and Options.AutoAcceptPetName.Value or {}
 				for i, pet in pairs(traderPets) do
@@ -1703,8 +1692,129 @@ do
 							print("✅ [Auto Trade] Auto-accepting pet by name: " .. petType)
 							TradeRE:FireServer({ event = "accept" })
 							autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+
+							-- Send webhook notification
+							local webhookMsg = "✅ **Trade Accepted** (Pet Name)\n\n"
+							webhookMsg = webhookMsg
+							.. "**Your Pet:**\n- Type: "
+							.. tostring(playerPet.T)
+							.. "\n- Mutation: "
+							.. tostring(playerPet.M)
+							.. "\n- V: "
+							.. formatNumber(tonumber(playerPet.V) or 0)
+							.. "\n- Value: "
+							 .. formatNumber(playerValue)
+							 .. "\n\n"
+							webhookMsg = webhookMsg .. "**Trader Pets:\n"
+							for _, traderPet in pairs(traderPets) do
+							webhookMsg = webhookMsg
+							.. "- "
+							.. tostring(traderPet.T)
+							.. " ("
+							.. tostring(traderPet.M)
+							.. ") - V: "
+							  .. formatNumber(tonumber(traderPet.V) or 0)
+							  .. " - "
+							  .. formatNumber(getPetValue(traderPet))
+								.. "\n"
+						end
+						webhookMsg = webhookMsg .. "\n**Reason:** Pet Name Match (" .. petType .. ")"
+						sendWebhookNotification(webhookMsg)
+
 							return
 						end
+					end
+				end
+			end
+
+			-- Check for auto-accept by same type & mutation (with more value) - second priority
+			if Options.AutoAcceptSameMutation and Options.AutoAcceptSameMutation.Value then
+				local playerType = tostring(playerPet.T):lower()
+				local playerMutation = tostring(playerPet.M):lower()
+				local playerV = tonumber(playerPet.V) or 0
+
+				-- Check if trader offers a pet with same type+mutation and >= V value
+				local hasSamePet = false
+				local matchingPetUID = nil
+				for i, pet in pairs(traderPets) do
+					local traderType = tostring(pet.T):lower()
+					local traderMutation = tostring(pet.M):lower()
+					local traderV = tonumber(pet.V) or 0
+
+					if traderType == playerType and traderMutation == playerMutation and traderV >= playerV then
+						hasSamePet = true
+						matchingPetUID = pet.UID
+						break
+					end
+				end
+
+				-- If same pet found, check if total trader value is more than player value
+				if hasSamePet and traderValue > playerValue then
+					print(
+						"✅ [Auto Trade] Auto-accepting - trader offers "
+							.. playerPet.T
+							.. " ("
+							.. playerPet.M
+							.. ") + more value"
+					)
+
+					TradeRE:FireServer({ event = "accept" })
+					autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+
+					-- Update held pet UID to the trader's pet UID
+					if matchingPetUID and Options.HeldPetUID then
+						Options.HeldPetUID:SetValue(matchingPetUID)
+						print("💾 [Auto Trade] Updated held pet UID to received pet: " .. matchingPetUID)
+					end
+
+					-- Send webhook notification
+					local webhookMsg = "✅ **Trade Accepted** (Same Pet + More Value)\n\n"
+					webhookMsg = webhookMsg
+					.. "**Your Pet:**\n- Type: "
+					.. tostring(playerPet.T)
+					.. "\n- Mutation: "
+					.. tostring(playerPet.M)
+					.. "\n- V: "
+					.. formatNumber(tonumber(playerPet.V) or 0)
+					.. "\n- Value: "
+					 .. formatNumber(playerValue)
+					 .. "\n\n"
+					webhookMsg = webhookMsg .. "**Trader Pets:**\n"
+					for _, traderPet in pairs(traderPets) do
+					webhookMsg = webhookMsg
+					.. "- "
+					.. tostring(traderPet.T)
+					.. " ("
+					.. tostring(traderPet.M)
+					.. ") - V: "
+					  .. formatNumber(tonumber(traderPet.V) or 0)
+					  .. " - "
+					 .. formatNumber(getPetValue(traderPet))
+					 .. "\n"
+					end
+				webhookMsg = webhookMsg
+					.. "\n**Total Value Difference:** +"
+					.. formatNumber(traderValue - playerValue)
+				sendWebhookNotification(webhookMsg)
+
+					return
+				elseif hasSamePet then
+					-- Check if trader only offered 1 pet (the same type+mutation)
+					if #traderPets == 1 and bargainTime < 2 then
+						print(
+							"🎲 [Auto Trade] Trader offers only same pet ("
+								.. playerPet.T
+								.. ") - sending bargain request"
+						)
+						TradeRE:FireServer({ event = "bargain" })
+						print("✅ [Auto Trade] Bargain event sent, waiting for server response...")
+						return
+					else
+						print("⚠️ [Auto Trade] Trader offers same pet but no additional value - declining")
+						-- Decline if more than 1 pet or bargain already used
+						TradeRE:FireServer({ event = "decline" })
+						autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
+						return
 					end
 				end
 			end
@@ -1740,7 +1850,7 @@ do
 							index = i,
 							value = petValue,
 							type = pet.T,
-							mutation = pet.M
+							mutation = pet.M,
 						})
 						print(
 							"✅ [Auto Trade] High-value pet found #"
@@ -1754,7 +1864,7 @@ do
 					end
 				end
 			end
-			
+
 			-- Send webhook notification if there are high-value pets
 			if #highValuePets > 0 then
 				local webhookMsg = "🚨 **High-Value Trade Alert** 🚨\n\n"
@@ -1764,7 +1874,16 @@ do
 				webhookMsg = webhookMsg .. "- Value: " .. formatNumber(playerValue) .. "\n\n"
 				webhookMsg = webhookMsg .. "**Trader Offering:\n"
 				for _, petInfo in pairs(highValuePets) do
-					webhookMsg = webhookMsg .. "- Pet #" .. petInfo.index .. ": " .. tostring(petInfo.type) .. " (" .. tostring(petInfo.mutation) .. ") - **" .. formatNumber(petInfo.value) .. "**\n"
+					webhookMsg = webhookMsg
+						.. "- Pet #"
+						.. petInfo.index
+						.. ": "
+						.. tostring(petInfo.type)
+						.. " ("
+						.. tostring(petInfo.mutation)
+						.. ") - **"
+						.. formatNumber(petInfo.value)
+						.. "**\n"
 				end
 				webhookMsg = webhookMsg .. "\nMode: " .. acceptanceMode
 				sendWebhookNotification(webhookMsg)
@@ -1781,6 +1900,18 @@ do
 			end
 
 			if not shouldAccept then
+				-- Try bargaining if available before declining
+				if Options.AutoBargain and Options.AutoBargain.Value and bargainTime < 2 then
+					print(
+						"🎲 [Auto Trade] Trade not accepted - attempting bargain (BargainTime: "
+							.. tostring(bargainTime)
+							.. ")"
+					)
+					TradeRE:FireServer({ event = "bargain" })
+					print("✅ [Auto Trade] Bargain event sent, waiting for server response...")
+					return
+				end
+
 				print(
 					"❌ [Auto Trade] Trade not meeting acceptance criteria - Declining (Mode: "
 						.. acceptanceMode
@@ -1839,21 +1970,22 @@ do
 			-- Send webhook notification
 			local traderPetsList = {}
 			for _, pet in pairs(traderPets) do
-				table.insert(traderPetsList, tostring(pet.T) .. " (" .. tostring(pet.M) .. ")")
+			table.insert(traderPetsList, tostring(pet.T) .. " (" .. tostring(pet.M) .. ") V:" .. formatNumber(tonumber(pet.V) or 0))
 			end
 			local webhookMessage = string.format(
-				"**Trade Accepted** 🎉\n"
-					.. "Your Pet: %s (%s)\n"
-					.. "Trader Pets: %s\n"
-					.. "Fairness: %.1f%%\n"
-					.. "Trade #%d",
-				tostring(playerPet.T),
-				tostring(playerPet.M),
-				table.concat(traderPetsList, ", "),
-				fairnessRatio * 100,
-				autoTradeState.tradeCount
+			"**Trade Accepted** 🎉\n"
+			.. "Your Pet: %s (%s) V:%s\n"
+			.. "Trader Pets: %s\n"
+			.. "Fairness: %.1f%%\n"
+			.. "Trade #%d",
+			tostring(playerPet.T),
+			tostring(playerPet.M),
+			formatNumber(tonumber(playerPet.V) or 0),
+			table.concat(traderPetsList, ", "),
+			fairnessRatio * 100,
+			 autoTradeState.tradeCount
 			)
-			sendWebhookNotification(webhookMessage)
+		sendWebhookNotification(webhookMessage)
 
 			-- Clear held pet UID after accepting trade (pet is now traded away)
 			if Options.HeldPetUID then
@@ -1995,6 +2127,13 @@ do
 		Options.AutoAcceptPetValue.Value = numValue
 		print("💎 [AutoAcceptPetValue] Set to: " .. formatNumber(numValue))
 	end)
+
+	-- NEW: Auto Accept Same Type & Mutation Toggle
+	local AutoAcceptSameMutation = TradeSection:AddToggle("AutoAcceptSameMutation", {
+		Title = "Auto Accept Same Type & Mutation + More",
+		Description = "Accept if trader offers same type+mutation pet AND more value",
+		Default = false,
+	})
 
 	local RequireBetterValue = TradeSection:AddToggle("RequireBetterValue", {
 		Title = "Require Better Value",
