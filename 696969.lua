@@ -1820,7 +1820,7 @@ do
 			end
 
 			-- Check fairness threshold and acceptance mode
-			local minFairnessPercent = Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
+			local minFairnessPercent = tonumber(Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9) or 0.9
 			local acceptanceMode = Options.AcceptanceMode and Options.AcceptanceMode.Value or "Fairness Only"
 
 			print(
