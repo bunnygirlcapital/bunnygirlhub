@@ -1696,30 +1696,30 @@ do
 							-- Send webhook notification
 							local webhookMsg = "✅ **Trade Accepted** (Pet Name)\n\n"
 							webhookMsg = webhookMsg
-							.. "**Your Pet:**\n- Type: "
-							.. tostring(playerPet.T)
-							.. "\n- Mutation: "
-							.. tostring(playerPet.M)
-							.. "\n- V: "
-							.. formatNumber(tonumber(playerPet.V) or 0)
-							.. "\n- Value: "
-							 .. formatNumber(playerValue)
-							 .. "\n\n"
+								.. "**Your Pet:**\n- Type: "
+								.. tostring(playerPet.T)
+								.. "\n- Mutation: "
+								.. tostring(playerPet.M)
+								.. "\n- V: "
+								.. formatNumber(tonumber(playerPet.V) or 0)
+								.. "\n- Value: "
+								.. formatNumber(playerValue)
+								.. "\n\n"
 							webhookMsg = webhookMsg .. "**Trader Pets:\n"
 							for _, traderPet in pairs(traderPets) do
-							webhookMsg = webhookMsg
-							.. "- "
-							.. tostring(traderPet.T)
-							.. " ("
-							.. tostring(traderPet.M)
-							.. ") - V: "
-							  .. formatNumber(tonumber(traderPet.V) or 0)
-							  .. " - "
-							  .. formatNumber(getPetValue(traderPet))
-								.. "\n"
-						end
-						webhookMsg = webhookMsg .. "\n**Reason:** Pet Name Match (" .. petType .. ")"
-						sendWebhookNotification(webhookMsg)
+								webhookMsg = webhookMsg
+									.. "- "
+									.. tostring(traderPet.T)
+									.. " ("
+									.. tostring(traderPet.M)
+									.. ") - V: "
+									.. formatNumber(tonumber(traderPet.V) or 0)
+									.. " - "
+									.. formatNumber(getPetValue(traderPet))
+									.. "\n"
+							end
+							webhookMsg = webhookMsg .. "\n**Reason:** Pet Name Match (" .. petType .. ")"
+							sendWebhookNotification(webhookMsg)
 
 							return
 						end
@@ -1770,32 +1770,32 @@ do
 					-- Send webhook notification
 					local webhookMsg = "✅ **Trade Accepted** (Same Pet + More Value)\n\n"
 					webhookMsg = webhookMsg
-					.. "**Your Pet:**\n- Type: "
-					.. tostring(playerPet.T)
-					.. "\n- Mutation: "
-					.. tostring(playerPet.M)
-					.. "\n- V: "
-					.. formatNumber(tonumber(playerPet.V) or 0)
-					.. "\n- Value: "
-					 .. formatNumber(playerValue)
-					 .. "\n\n"
+						.. "**Your Pet:**\n- Type: "
+						.. tostring(playerPet.T)
+						.. "\n- Mutation: "
+						.. tostring(playerPet.M)
+						.. "\n- V: "
+						.. formatNumber(tonumber(playerPet.V) or 0)
+						.. "\n- Value: "
+						.. formatNumber(playerValue)
+						.. "\n\n"
 					webhookMsg = webhookMsg .. "**Trader Pets:**\n"
 					for _, traderPet in pairs(traderPets) do
-					webhookMsg = webhookMsg
-					.. "- "
-					.. tostring(traderPet.T)
-					.. " ("
-					.. tostring(traderPet.M)
-					.. ") - V: "
-					  .. formatNumber(tonumber(traderPet.V) or 0)
-					  .. " - "
-					 .. formatNumber(getPetValue(traderPet))
-					 .. "\n"
+						webhookMsg = webhookMsg
+							.. "- "
+							.. tostring(traderPet.T)
+							.. " ("
+							.. tostring(traderPet.M)
+							.. ") - V: "
+							.. formatNumber(tonumber(traderPet.V) or 0)
+							.. " - "
+							.. formatNumber(getPetValue(traderPet))
+							.. "\n"
 					end
-				webhookMsg = webhookMsg
-					.. "\n**Total Value Difference:** +"
-					.. formatNumber(traderValue - playerValue)
-				sendWebhookNotification(webhookMsg)
+					webhookMsg = webhookMsg
+						.. "\n**Total Value Difference:** +"
+						.. formatNumber(traderValue - playerValue)
+					sendWebhookNotification(webhookMsg)
 
 					return
 				elseif hasSamePet then
@@ -1820,7 +1820,9 @@ do
 			end
 
 			-- Check fairness threshold and acceptance mode
-			local minFairnessPercent = tonumber(Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9) or 0.9
+			local minFairnessPercent = tonumber(
+				Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
+			) or 0.9
 			local acceptanceMode = Options.AcceptanceMode and Options.AcceptanceMode.Value or "Fairness Only"
 
 			print(
@@ -1968,24 +1970,38 @@ do
 			autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
 
 			-- Send webhook notification
-			local traderPetsList = {}
-			for _, pet in pairs(traderPets) do
-			table.insert(traderPetsList, tostring(pet.T) .. " (" .. tostring(pet.M) .. ") V:" .. formatNumber(tonumber(pet.V) or 0))
+			local acceptanceReason = acceptByValue and "Pet Value Only" or (acceptByFairness and "Fairness Only" or "Either")
+			local webhookMsg = "✅ **Trade Accepted** (" .. acceptanceReason .. ")\n\n"
+			webhookMsg = webhookMsg
+				.. "**Your Pet:**\n- Type: "
+				.. tostring(playerPet.T)
+				.. "\n- Mutation: "
+				.. tostring(playerPet.M)
+				.. "\n- V: "
+				.. formatNumber(tonumber(playerPet.V) or 0)
+				.. "\n- Value: "
+				.. formatNumber(playerValue)
+				.. "\n\n"
+			webhookMsg = webhookMsg .. "**Trader Pets:**\n"
+			for _, traderPet in pairs(traderPets) do
+				webhookMsg = webhookMsg
+					.. "- "
+					.. tostring(traderPet.T)
+					.. " ("
+					.. tostring(traderPet.M)
+					.. ") - V: "
+					.. formatNumber(tonumber(traderPet.V) or 0)
+					.. " - "
+					.. formatNumber(getPetValue(traderPet))
+					.. "\n"
 			end
-			local webhookMessage = string.format(
-			"**Trade Accepted** 🎉\n"
-			.. "Your Pet: %s (%s) V:%s\n"
-			.. "Trader Pets: %s\n"
-			.. "Fairness: %.1f%%\n"
-			.. "Trade #%d",
-			tostring(playerPet.T),
-			tostring(playerPet.M),
-			formatNumber(tonumber(playerPet.V) or 0),
-			table.concat(traderPetsList, ", "),
-			fairnessRatio * 100,
-			 autoTradeState.tradeCount
-			)
-		sendWebhookNotification(webhookMessage)
+			webhookMsg = webhookMsg
+				.. "\n**Total Value Difference:** +"
+				.. formatNumber(traderValue - playerValue)
+				.. ", ("
+				.. string.format("%.1f%%", fairnessRatio * 100)
+				.. " fairness)"
+			sendWebhookNotification(webhookMsg)
 
 			-- Clear held pet UID after accepting trade (pet is now traded away)
 			if Options.HeldPetUID then
