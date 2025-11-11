@@ -1839,7 +1839,7 @@ do
 
 			-- Check if any pet meets high-value threshold
 			local acceptByValue = false
-			local acceptThreshold = tonumber(Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0) or 0
+			local acceptThreshold = Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0
 			local highValuePets = {} -- Track high-value pets for webhook
 			if acceptThreshold > 0 then
 				for i, pet in pairs(traderPets) do
@@ -2116,16 +2116,14 @@ do
 	local AutoAcceptPetValue = TradeSection:AddInput("AutoAcceptPetValue", {
 		Title = "Auto Accept Pet Value",
 		Description = "Accept trade if any trader pet >= this value (0 = disabled)",
-		Default = "1000000",
+		Default = 1000000,
 		Numeric = true,
 		Finished = false,
 		Placeholder = "1000000",
 	})
 
 	AutoAcceptPetValue:OnChanged(function(value)
-		local numValue = tonumber(value) or 0
-		Options.AutoAcceptPetValue.Value = numValue
-		print("💎 [AutoAcceptPetValue] Set to: " .. formatNumber(numValue))
+		print("💎 [AutoAcceptPetValue] Set to: " .. formatNumber(value))
 	end)
 
 	-- NEW: Auto Accept Same Type & Mutation Toggle
