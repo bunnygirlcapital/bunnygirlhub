@@ -1705,7 +1705,7 @@ do
 								.. "\n- Value: "
 								.. formatNumber(playerValue)
 								.. "\n\n"
-							webhookMsg = webhookMsg .. "**Trader Pets:\n"
+							webhookMsg = webhookMsg .. "**Trader Pets:**\n"
 							for _, traderPet in pairs(traderPets) do
 								webhookMsg = webhookMsg
 									.. "- "
@@ -1718,7 +1718,12 @@ do
 									.. formatNumber(getPetValue(traderPet))
 									.. "\n"
 							end
-							webhookMsg = webhookMsg .. "\n**Reason:** Pet Name Match (" .. petType .. ")"
+							webhookMsg = webhookMsg
+								.. "\n**Total Value Difference:** +"
+								.. formatNumber(traderValue - playerValue)
+								.. ", ("
+								.. string.format("%.1f%%", fairnessRatio * 100)
+								.. " fairness)"
 							sendWebhookNotification(webhookMsg)
 
 							return
@@ -1869,25 +1874,36 @@ do
 
 			-- Send webhook notification if there are high-value pets
 			if #highValuePets > 0 then
-				local webhookMsg = "🚨 **High-Value Trade Alert** 🚨\n\n"
-				webhookMsg = webhookMsg .. "**Your Pet:**\n"
-				webhookMsg = webhookMsg .. "- Type: " .. tostring(playerPet.T) .. "\n"
-				webhookMsg = webhookMsg .. "- Mutation: " .. tostring(playerPet.M) .. "\n"
-				webhookMsg = webhookMsg .. "- Value: " .. formatNumber(playerValue) .. "\n\n"
-				webhookMsg = webhookMsg .. "**Trader Offering:\n"
-				for _, petInfo in pairs(highValuePets) do
+				local webhookMsg = "✅ **Trade Accepted** (High-Value Pet)\n\n"
+				webhookMsg = webhookMsg
+					.. "**Your Pet:**\n- Type: "
+					.. tostring(playerPet.T)
+					.. "\n- Mutation: "
+					.. tostring(playerPet.M)
+					.. "\n- V: "
+					.. formatNumber(tonumber(playerPet.V) or 0)
+					.. "\n- Value: "
+					.. formatNumber(playerValue)
+					.. "\n\n"
+				webhookMsg = webhookMsg .. "**Trader Pets:**\n"
+				for _, traderPet in pairs(traderPets) do
 					webhookMsg = webhookMsg
-						.. "- Pet #"
-						.. petInfo.index
-						.. ": "
-						.. tostring(petInfo.type)
+						.. "- "
+						.. tostring(traderPet.T)
 						.. " ("
-						.. tostring(petInfo.mutation)
-						.. ") - **"
-						.. formatNumber(petInfo.value)
-						.. "**\n"
+						.. tostring(traderPet.M)
+						.. ") - V: "
+						.. formatNumber(tonumber(traderPet.V) or 0)
+						.. " - "
+						.. formatNumber(getPetValue(traderPet))
+						.. "\n"
 				end
-				webhookMsg = webhookMsg .. "\nMode: " .. acceptanceMode
+				webhookMsg = webhookMsg
+					.. "\n**Total Value Difference:** +"
+					.. formatNumber(traderValue - playerValue)
+					.. ", ("
+					.. string.format("%.1f%%", fairnessRatio * 100)
+					.. " fairness)"
 				sendWebhookNotification(webhookMsg)
 			end
 
