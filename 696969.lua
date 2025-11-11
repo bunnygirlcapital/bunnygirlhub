@@ -1590,6 +1590,10 @@ do
 
 	-- Trade Decision Logic
 	local function handleTrade(tradeData)
+		if Fluent.Unloaded then
+			return
+		end
+
 		local success, err = pcall(function()
 			if not tradeData then
 				print("⚠️ [Auto Trade] No trade data received")
@@ -2033,7 +2037,6 @@ do
 	end
 
 	-- Set up listener after handleTrade is defined
-	local tradeConnection
 	task.spawn(function()
 		while not dependenciesLoaded do
 			task.wait(0.1)
@@ -2041,24 +2044,13 @@ do
 
 		if TradeRE then
 			print("✅ [Auto Trade] Setting up trade listener")
-			tradeConnection = TradeRE.OnClientEvent:Connect(handleTrade)
+			TradeRE.OnClientEvent:Connect(handleTrade)
 
 			Fluent:Notify({
 				Title = "Auto Trade Ready",
 				Content = "Toggle ON then walk into trade zone",
 				Duration = 4,
 			})
-		end
-	end)
-
-	-- Cleanup trade connection when Fluent is unloaded
-	task.spawn(function()
-		while not Fluent.Unloaded do
-			task.wait(0.1)
-		end
-		if tradeConnection then
-			tradeConnection:Disconnect()
-			print("🛑 [Auto Trade] Trade listener disconnected")
 		end
 	end)
 
