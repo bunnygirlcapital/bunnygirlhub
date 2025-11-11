@@ -1590,7 +1590,7 @@ do
 
 	-- Trade Decision Logic
 	local function handleTrade(tradeData)
-		if Fluent.Unloaded then
+		if Fluent.Unloaded or not autoTradeState.enabled then
 			return
 		end
 
@@ -1619,9 +1619,9 @@ do
 
 			print("📨 [Auto Trade] Trade offer received")
 
-			if not autoTradeState.enabled or not dependenciesLoaded then
-				print("⚠️ [Auto Trade] Ignoring - auto trade disabled or not ready")
-				return
+			if not dependenciesLoaded then
+			print("⚠️ [Auto Trade] Ignoring - dependencies not ready")
+			return
 			end
 
 			local data = tradeData.data
