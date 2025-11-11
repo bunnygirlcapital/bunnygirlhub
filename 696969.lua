@@ -1839,7 +1839,7 @@ do
 
 			-- Check if any pet meets high-value threshold
 			local acceptByValue = false
-			local acceptThreshold = Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0
+			local acceptThreshold = tonumber(Options.AutoAcceptPetValue and Options.AutoAcceptPetValue.Value or 0) or 0
 			local highValuePets = {} -- Track high-value pets for webhook
 			if acceptThreshold > 0 then
 				for i, pet in pairs(traderPets) do
