@@ -2501,14 +2501,45 @@ do
 
 			if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
 				if dependenciesLoaded and TradeRE then
-					local success, error = pcall(function()
-						TradeRE:FireServer({ event = "claimreward" })
-					end)
+					-- Check if Kitsune counter is at 1000/1000
+					local LocalPlayer = getLocalPlayer()
+					local assignedIsland = LocalPlayer and LocalPlayer:GetAttribute("AssignedIslandName")
 
-					if success then
-						print("🦊 [Auto Claim Kitsune] Claimed Kitsune reward")
+					if assignedIsland then
+						local art = workspace:FindFirstChild("Art")
+						local island = art and art:FindFirstChild(assignedIsland)
+						local env = island and island:FindFirstChild("ENV")
+						local tradeZone = env and env:FindFirstChild("TradeZone")
+						local zone = tradeZone and tradeZone:FindFirstChild("Zone")
+						local kitsune = zone and zone:FindFirstChild("Kitsune")
+						local sellPart = kitsune and kitsune:FindFirstChild("SellPart")
+						local billboard = sellPart and sellPart:FindFirstChild("BillboardGui")
+						local root = billboard and billboard:FindFirstChild("Root")
+						local title = root and root:FindFirstChild("Title")
+
+						if title and title:FindFirstChild("Text") then
+							local counterText = title.Text.Text
+							-- Parse "xxx/1000" format
+							local current = tonumber(counterText:match("(%d+)/1000"))
+
+							if current and current >= 1000 then
+								local success, error = pcall(function()
+									TradeRE:FireServer({ event = "claimreward" })
+								end)
+
+								if success then
+									print("🦊 [Auto Claim Kitsune] Claimed Kitsune reward (" .. counterText .. ")")
+								else
+									print("🦊 [Auto Claim Kitsune] Failed to claim: " .. tostring(error))
+								end
+							else
+								print("🦊 [Auto Claim Kitsune] Counter not ready: " .. (counterText or "unknown"))
+							end
+						else
+							print("🦊 [Auto Claim Kitsune] Counter text not found")
+						end
 					else
-						print("🦊 [Auto Claim Kitsune] Failed to claim: " .. tostring(error))
+						print("🦊 [Auto Claim Kitsune] AssignedIsland not found")
 					end
 				else
 					print("🦊 [Auto Claim Kitsune] TradeRE not ready")
