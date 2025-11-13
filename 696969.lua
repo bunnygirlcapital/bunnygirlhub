@@ -2517,8 +2517,8 @@ do
 						local root = billboard and billboard:FindFirstChild("Root")
 						local title = root and root:FindFirstChild("Title")
 
-						if title and title:FindFirstChild("Text") then
-							local counterText = title.Text.Text
+						if title then
+							local counterText = title.Text
 							-- Parse "xxx/1000" format
 							local current = tonumber(counterText:match("(%d+)/1000"))
 
