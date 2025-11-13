@@ -1697,6 +1697,13 @@ do
 							TradeRE:FireServer({ event = "accept" })
 							autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
 
+							-- Auto Claim Kitsune after trade
+							if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
+								task.wait(0.5) -- Small delay to ensure trade processes
+								TradeRE:FireServer({ event = "claimreward" })
+								print("🦊 [Auto Claim Kitsune] Claiming Kitsune reward...")
+							end
+
 							-- Send webhook notification
 							local webhookMsg = "✅ **Trade Accepted** (Pet Name)\n\n"
 							webhookMsg = webhookMsg
@@ -1769,6 +1776,13 @@ do
 
 					TradeRE:FireServer({ event = "accept" })
 					autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+
+					-- Auto Claim Kitsune after trade
+					if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
+						task.wait(0.5) -- Small delay to ensure trade processes
+						TradeRE:FireServer({ event = "claimreward" })
+						print("🦊 [Auto Claim Kitsune] Claiming Kitsune reward...")
+					end
 
 					-- Update held pet UID to the trader's pet UID
 					if matchingPetUID and Options.HeldPetUID then
@@ -1988,6 +2002,13 @@ do
 			print("✅ [Auto Trade] Accepting (Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ")")
 			TradeRE:FireServer({ event = "accept" })
 			autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+
+			-- Auto Claim Kitsune after trade
+			if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
+				task.wait(0.5) -- Small delay to ensure trade processes
+				TradeRE:FireServer({ event = "claimreward" })
+				print("🦊 [Auto Claim Kitsune] Claiming Kitsune reward...")
+			end
 
 			-- Send webhook notification
 			local acceptanceReason = acceptByValue and "Pet Value Only" or (acceptByFairness and "Fairness Only" or "Either")
@@ -2484,6 +2505,13 @@ do
 				})
 			end
 		end,
+	})
+
+	-- Auto Claim Kitsune toggle
+	local AutoClaimKitsune = StatsSection:AddToggle("AutoClaimKitsune", {
+		Title = "Auto Claim Kitsune",
+		Description = "Automatically claim Kitsune after every trade",
+		Default = false,
 	})
 
 	-- Cleanup
