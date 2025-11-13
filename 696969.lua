@@ -2490,7 +2490,7 @@ do
 	local AutoClaimKitsune = StatsSection:AddToggle("AutoClaimKitsune", {
 		Title = "Auto Claim Kitsune",
 		Description = "Automatically claim Kitsune every 5 minutes",
-		Default = false,
+		Default = true,
 	})
 
 	-- Auto Claim Kitsune coroutine
