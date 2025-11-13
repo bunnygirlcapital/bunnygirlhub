@@ -1697,13 +1697,6 @@ do
 							TradeRE:FireServer({ event = "accept" })
 							autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
 
-							-- Auto Claim Kitsune after trade
-							if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
-								task.wait(0.5) -- Small delay to ensure trade processes
-								TradeRE:FireServer({ event = "claimreward" })
-								print("🦊 [Auto Claim Kitsune] Claiming Kitsune reward...")
-							end
-
 							-- Send webhook notification
 							local webhookMsg = "✅ **Trade Accepted** (Pet Name)\n\n"
 							webhookMsg = webhookMsg
@@ -1776,13 +1769,6 @@ do
 
 					TradeRE:FireServer({ event = "accept" })
 					autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
-
-					-- Auto Claim Kitsune after trade
-					if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
-						task.wait(0.5) -- Small delay to ensure trade processes
-						TradeRE:FireServer({ event = "claimreward" })
-						print("🦊 [Auto Claim Kitsune] Claiming Kitsune reward...")
-					end
 
 					-- Update held pet UID to the trader's pet UID
 					if matchingPetUID and Options.HeldPetUID then
@@ -2002,13 +1988,6 @@ do
 			print("✅ [Auto Trade] Accepting (Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ")")
 			TradeRE:FireServer({ event = "accept" })
 			autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
-
-			-- Auto Claim Kitsune after trade
-			if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
-				task.wait(0.5) -- Small delay to ensure trade processes
-				TradeRE:FireServer({ event = "claimreward" })
-				print("🦊 [Auto Claim Kitsune] Claiming Kitsune reward...")
-			end
 
 			-- Send webhook notification
 			local acceptanceReason = acceptByValue and "Pet Value Only" or (acceptByFairness and "Fairness Only" or "Either")
@@ -2510,9 +2489,34 @@ do
 	-- Auto Claim Kitsune toggle
 	local AutoClaimKitsune = StatsSection:AddToggle("AutoClaimKitsune", {
 		Title = "Auto Claim Kitsune",
-		Description = "Automatically claim Kitsune after every trade",
+		Description = "Automatically claim Kitsune every 5 minutes",
 		Default = false,
 	})
+
+	-- Auto Claim Kitsune coroutine
+	task.spawn(function()
+		print("🦊 [Auto Claim Kitsune] Coroutine started")
+		while not Fluent.Unloaded do
+			task.wait(5 * 60) -- Wait 5 minutes
+
+			if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
+				if dependenciesLoaded and TradeRE then
+					local success, error = pcall(function()
+						TradeRE:FireServer({ event = "claimreward" })
+					end)
+
+					if success then
+						print("🦊 [Auto Claim Kitsune] Claimed Kitsune reward")
+					else
+						print("🦊 [Auto Claim Kitsune] Failed to claim: " .. tostring(error))
+					end
+				else
+					print("🦊 [Auto Claim Kitsune] TradeRE not ready")
+				end
+			end
+		end
+		print("🦊 [Auto Claim Kitsune] Coroutine stopped")
+	end)
 
 	-- Cleanup
 	task.spawn(function()
