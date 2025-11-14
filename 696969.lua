@@ -10,6 +10,60 @@ local InterfaceManager = loadstring(
 
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+-- Constants
+local CONSTANTS = {
+	REMOTE_FOLDER = "Remote",
+	CHARACTER_REMOTE = "CharacterRE",
+	TRADE_ZONE_REMOTE = "TradeZoneRE",
+	TRADE_REMOTE = "TradeRE",
+	EGGS_FOLDER = "Eggs",
+	ART_FOLDER = "Art",
+	ENV_FOLDER = "ENV",
+	TRADE_ZONE_FOLDER = "TradeZone",
+	ZONE_FOLDER = "Zone",
+	KITSUNE_FOLDER = "Kitsune",
+	SELL_PART = "SellPart",
+	BILLBOARD_GUI = "BillboardGui",
+	ROOT = "Root",
+	TITLE = "Title",
+	PLAYER_GUI = "PlayerGui",
+	DATA = "Data",
+	EGG = "Egg",
+	FOOD = "Food",
+	RES_PET_FOOD = "ResPetFood",
+	ASSIGNED_ISLAND_NAME = "AssignedIslandName",
+	ISLAND_ID = "IslandID",
+	UID = "UID",
+	MUTATION = "M",
+	EGG_TYPE = "T",
+}
+
+-- Helper functions for common operations
+local function getLocalPlayer()
+	local player = Players.LocalPlayer
+	if not player then
+		-- Wait for LocalPlayer to be available
+		local attempts = 0
+		while not player and attempts < 50 do
+			task.wait(0.1)
+			player = Players.LocalPlayer
+			attempts = attempts + 1
+		end
+	end
+	return player
+end
+
+local function getRemote(name)
+	local remote = ReplicatedStorage:FindFirstChild(CONSTANTS.REMOTE_FOLDER)
+	if remote then
+		return remote:FindFirstChild(name)
+	end
+	return nil
+end
 
 local Window = Fluent:CreateWindow({
 	Title = "Bunny Girl Hub | Version " .. VERSION,
@@ -241,23 +295,6 @@ end
 
 -- Auto Tab Content - Build A Zoo Egg Buyer Integration
 do
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local RunService = game:GetService("RunService")
-
-	-- Helper function to get LocalPlayer (with wait if needed)
-	local function getLocalPlayer()
-		local player = game.Players.LocalPlayer
-		if not player then
-			-- Wait for LocalPlayer to be available
-			local attempts = 0
-			while not player and attempts < 50 do
-				task.wait(0.1)
-				player = game.Players.LocalPlayer
-				attempts = attempts + 1
-			end
-		end
-		return player
-	end
 
 	-- Egg buyer state
 	local eggBuyerState = {
@@ -280,13 +317,13 @@ do
 		end
 
 		-- Wait for assigned island if not set yet (matching decompiled game code)
-		local assignedIsland = LocalPlayer:GetAttribute("AssignedIslandName")
+		local assignedIsland = LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
 		if not assignedIsland then
 			-- Try waiting for it (with timeout to avoid infinite wait)
 			local attempts = 0
 			while not assignedIsland and attempts < 50 do
 				task.wait(0.1)
-				assignedIsland = LocalPlayer:GetAttribute("AssignedIslandName")
+				assignedIsland = LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
 				attempts = attempts + 1
 			end
 		end
@@ -312,7 +349,7 @@ do
 
 		-- Secondary check: Compare AssignedIslandName with IslandID attribute
 		-- This matches the decompiled game code logic
-		local islandID = islandFolder:GetAttribute("IslandID")
+		local islandID = islandFolder:GetAttribute(CONSTANTS.ISLAND_ID)
 		if islandID and islandID == playerIslandName then
 			return true
 		end
@@ -392,7 +429,7 @@ do
 	-- Egg detection function - ONLY scans player's island
 	local function findEggsInReplicatedStorage()
 		local eggs = {}
-		local eggsFolder = ReplicatedStorage:FindFirstChild("Eggs")
+		local eggsFolder = ReplicatedStorage:FindFirstChild(CONSTANTS.EGGS_FOLDER)
 		if not eggsFolder then
 			return eggs
 		end
@@ -404,9 +441,9 @@ do
 		end
 
 		for _, eggObject in pairs(playerIslandFolder:GetChildren()) do
-			local uid = eggObject:GetAttribute("UID")
-			local mutation = eggObject:GetAttribute("M")
-			local eggType = eggObject:GetAttribute("T")
+			local uid = eggObject:GetAttribute(CONSTANTS.UID)
+			local mutation = eggObject:GetAttribute(CONSTANTS.MUTATION)
+			local eggType = eggObject:GetAttribute(CONSTANTS.EGG_TYPE)
 
 			if uid or eggObject.Name:match("^[a-f0-9]+$") then
 				table.insert(eggs, {
@@ -473,27 +510,24 @@ do
 
 	-- Purchase function
 	local function attemptPurchaseEgg(eggInfo)
-		local remote = ReplicatedStorage:FindFirstChild("Remote")
-		if remote then
-			local characterRemote = remote:FindFirstChild("CharacterRE")
-			if characterRemote then
-				local success, error = pcall(function()
-					characterRemote:FireServer("BuyEgg", eggInfo.id)
-				end)
+		local characterRemote = getRemote(CONSTANTS.CHARACTER_REMOTE)
+		if characterRemote then
+			local success, error = pcall(function()
+				characterRemote:FireServer("BuyEgg", eggInfo.id)
+			end)
 
-				if success then
-					print("✅ Purchase attempt sent for: " .. eggInfo.name .. " (" .. eggInfo.mutation .. ")")
-					table.insert(eggBuyerState.eggData.purchasedEggs, {
-						id = eggInfo.id,
-						name = eggInfo.name,
-						mutation = eggInfo.mutation,
-						timestamp = os.time(),
-						timeString = os.date("%H:%M:%S"),
-					})
-					return true
-				else
-					print("❌ Purchase failed: " .. tostring(error))
-				end
+			if success then
+				print("✅ Purchase attempt sent for: " .. eggInfo.name .. " (" .. eggInfo.mutation .. ")")
+				table.insert(eggBuyerState.eggData.purchasedEggs, {
+					id = eggInfo.id,
+					name = eggInfo.name,
+					mutation = eggInfo.mutation,
+					timestamp = os.time(),
+					timeString = os.date("%H:%M:%S"),
+				})
+				return true
+			else
+				print("❌ Purchase failed: " .. tostring(error))
 			end
 		end
 		return false
@@ -514,9 +548,9 @@ do
 
 			wait(0.1) -- Small delay to ensure attributes are set
 
-			local uid = eggObject:GetAttribute("UID")
-			local mutation = eggObject:GetAttribute("M")
-			local eggType = eggObject:GetAttribute("T")
+			local uid = eggObject:GetAttribute(CONSTANTS.UID)
+			local mutation = eggObject:GetAttribute(CONSTANTS.MUTATION)
+			local eggType = eggObject:GetAttribute(CONSTANTS.EGG_TYPE)
 
 			if uid or eggObject.Name:match("^[a-f0-9]+$") then
 				local eggInfo = {
@@ -601,7 +635,7 @@ do
 		eggBuyerState.isRunning = true
 
 		-- Find or wait for Eggs folder
-		local eggsFolder = ReplicatedStorage:FindFirstChild("Eggs")
+		local eggsFolder = ReplicatedStorage:FindFirstChild(CONSTANTS.EGGS_FOLDER)
 		if not eggsFolder then
 			eggsFolder = ReplicatedStorage:WaitForChild("Eggs", 10)
 			if not eggsFolder then
@@ -803,9 +837,7 @@ end
 
 -- Lottery Tab Content
 do
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local Players = game:GetService("Players")
-	local LocalPlayer = Players.LocalPlayer
+	local LocalPlayer = getLocalPlayer()
 
 	-- Define available codes
 	local lotteryCodes = {
@@ -953,8 +985,6 @@ end
 -- Food Tab Content - Auto Buy Food Integration
 do
 	print("🚀🚀🚀 STARTING AUTO BUY FOOD INTEGRATION 🚀🚀🚀")
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	print("✅ ReplicatedStorage retrieved")
 
 	-- Load food config from ResPetFood
 	local foodConfig = {}
@@ -1026,13 +1056,12 @@ do
 
 	-- Setup FoodStore attribute listener
 	local function setupFoodStoreListener()
-		local Players = game:GetService("Players")
-		local LocalPlayer = Players.LocalPlayer
+		local LocalPlayer = getLocalPlayer()
 
 		if not LocalPlayer then
 			warn("⚠️ LocalPlayer not found, waiting...")
 			task.wait(1)
-			LocalPlayer = Players.LocalPlayer
+			LocalPlayer = getLocalPlayer()
 			if not LocalPlayer then
 				warn("❌ Could not get LocalPlayer for FoodStore listener")
 				return
@@ -1411,9 +1440,7 @@ do
 	local type = type
 	local table = table
 
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local Players = game:GetService("Players")
-	local LocalPlayer = Players.LocalPlayer
+	local LocalPlayer = getLocalPlayer()
 
 	-- Auto Trade State
 	local autoTradeState = {
@@ -1691,7 +1718,7 @@ do
 			if Options.AutoAcceptPetNameToggle and Options.AutoAcceptPetNameToggle.Value then
 				local selectedPetNames = Options.AutoAcceptPetName and Options.AutoAcceptPetName.Value or {}
 				for i, pet in pairs(traderPets) do
-					local petType = pet.T or pet:GetAttribute("T")
+					local petType = pet.T or pet:GetAttribute(CONSTANTS.EGG_TYPE)
 					for petName, isSelected in pairs(selectedPetNames) do
 						if isSelected and tostring(petType):lower() == tostring(petName):lower() then
 							print("✅ [Auto Trade] Auto-accepting pet by name: " .. petType)
@@ -2203,9 +2230,7 @@ do
 	})
 
 	local function teleportToTradeZone(zoneNumber)
-		local Players = game:GetService("Players")
-		local LocalPlayer = Players.LocalPlayer
-		local Workspace = game:GetService("Workspace")
+		local LocalPlayer = getLocalPlayer()
 
 		if not LocalPlayer or not LocalPlayer.Character then
 			print("⚠️ [Teleport] Character not found")
@@ -2213,7 +2238,7 @@ do
 		end
 
 		-- Get player's assigned island
-		local assignedIsland = LocalPlayer:GetAttribute("AssignedIslandName")
+		local assignedIsland = LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
 		if not assignedIsland then
 			print("⚠️ [Teleport] AssignedIslandName not found")
 			return false
@@ -2504,10 +2529,10 @@ do
 				if dependenciesLoaded and TradeRE then
 					-- Check if Kitsune counter is at 1000/1000
 					local LocalPlayer = getLocalPlayer()
-					local assignedIsland = LocalPlayer and LocalPlayer:GetAttribute("AssignedIslandName")
+					local assignedIsland = LocalPlayer and LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
 
 					if assignedIsland then
-						local art = workspace:FindFirstChild("Art")
+						local art = Workspace:FindFirstChild("Art")
 						local island = art and art:FindFirstChild(assignedIsland)
 						local env = island and island:FindFirstChild("ENV")
 						local tradeZone = env and env:FindFirstChild("TradeZone")
@@ -2633,8 +2658,7 @@ do
 		Title = "Calculate Eggs",
 		Description = "Count eggs in inventory and send to webhook",
 		Callback = function()
-			local Players = game:GetService("Players")
-			local localPlayer = Players.LocalPlayer
+			local localPlayer = getLocalPlayer()
 
 			if not localPlayer then
 				Fluent:Notify({
@@ -2666,8 +2690,8 @@ do
 			local eggGroups = {} -- Table to group eggs by mutation and type
 
 			for _, eggObj in pairs(eggData:GetChildren()) do
-				local m = eggObj:GetAttribute("M")
-				local t = eggObj:GetAttribute("T")
+				local m = eggObj:GetAttribute(CONSTANTS.MUTATION)
+				local t = eggObj:GetAttribute(CONSTANTS.EGG_TYPE)
 				local uid = eggObj:GetAttribute("UID")
 
 				if m and t and uid then
