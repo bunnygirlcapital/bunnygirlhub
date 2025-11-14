@@ -334,6 +334,7 @@ do
 			"GodzillaEgg",
 			"MetroGiraffeEgg",
 			"BiteForceSharkEgg",
+			"GreenStormEgg",
 		},
 		Multi = true,
 		Default = { "GeneralKongEgg", "GodzillaEgg" },
