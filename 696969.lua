@@ -18,58 +18,45 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local HttpService = game:GetService("HttpService")
+local VirtualUser = cloneref(game:GetService("VirtualUser"))
+local TeleportService = game:GetService("TeleportService")
+local GuiService = game:GetService("GuiService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer.PlayerGui
+local PlaceId = game.PlaceId
+local JobId = game.JobId
 
 --// Folders
 local AssignedIslandName = LocalPlayer:GetAttribute("AssignedIslandName")
+local Eggs = ReplicatedStorage.Eggs
+local Art = Workspace.Art
+local Data = PlayerGui.Data
+local FoodStore = Data.FoodStore
+local Remote = ReplicatedStorage.Remote
 
---// Constants
-local CONSTANTS = {
-	REMOTE_FOLDER = "Remote",
-	CHARACTER_REMOTE = "CharacterRE",
-	TRADE_ZONE_REMOTE = "TradeZoneRE",
-	TRADE_REMOTE = "TradeRE",
-	EGGS_FOLDER = "Eggs",
-	ART_FOLDER = "Art",
-	ENV_FOLDER = "ENV",
-	TRADE_ZONE_FOLDER = "TradeZone",
-	ZONE_FOLDER = "Zone",
-	KITSUNE_FOLDER = "Kitsune",
-	SELL_PART = "SellPart",
-	BILLBOARD_GUI = "BillboardGui",
-	ROOT = "Root",
-	TITLE = "Title",
-	PLAYER_GUI = "PlayerGui",
-	DATA = "Data",
-	EGG = "Egg",
-	FOOD = "Food",
-	RES_PET_FOOD = "ResPetFood",
-	ASSIGNED_ISLAND_NAME = "AssignedIslandName",
-	ISLAND_ID = "IslandID",
-	UID = "UID",
-	MUTATION = "M",
-	EGG_TYPE = "T",
+local Config = ReplicatedStorage.Config
+local Shared = ReplicatedStorage.Shared
+local Pet = Shared:FindFirstChild("Pet")
+local Format = Shared:FindFirstChild("Format")
+local ResMutate = Config.ResMutate
+
+--// Remotes
+local CharacterRE = Remote.CharacterRE
+local TradeZoneRE = Remote.TradeZoneRE
+local TradeRE = Remote.TradeRE
+local RedemptionCodeRE = Remote.RedemptionCodeRE
+local LotteryRE = Remote.LotteryRE
+
+--// Embed setting
+local EmbedSettings = {
+	Color = 8388736, -- Purple (#800080)
+	Author = {
+		Name = LocalPlayer.Name,
+		Icon = "https://i.pinimg.com/1200x/27/3f/ad/273fad14a53fc4ed02e203b6d450d7a6.jpg",
+	},
 }
-
-local function getRemote(name)
-	local remote = ReplicatedStorage:FindFirstChild(CONSTANTS.REMOTE_FOLDER)
-	if remote then
-		return remote:FindFirstChild(name)
-	end
-	return nil
-end
-
--- Helper function to safely navigate object paths
-local function navigatePath(root, path)
-	local current = root
-	for _, name in ipairs(path) do
-		if not current then return nil end
-		current = current:FindFirstChild(name)
-	end
-	return current
-end
 
 local Window = Fluent:CreateWindow({
 	Title = "Bunny Girl Hub | Version " .. VERSION,
@@ -82,7 +69,13 @@ local Window = Fluent:CreateWindow({
 	MinimizeKey = Enum.KeyCode.LeftControl, -- Used when theres no MinimizeKeybind
 })
 
---Fluent provides Lucide Icons https://lucide.dev/icons/ for the tabs, icons are optional
+--// Check if the script is already running
+-- if _G.BuildAZoo then
+-- 	return
+-- end
+-- _G.BuildAZoo = true
+
+--// Tabs
 local Tabs = {
 	Main = Window:AddTab({ Title = "Main", Icon = "home" }),
 	Eggs = Window:AddTab({ Title = "Eggs", Icon = "egg" }),
@@ -93,9 +86,31 @@ local Tabs = {
 	Settings = Window:AddTab({ Title = "Settings", Icon = "settings" }),
 }
 
+--// Options
 local Options = Fluent.Options
 
--- Auto Tab Content - Build A Zoo Egg Buyer Integration
+--// General section
+local GeneralSection = Tabs.Main:AddSection("General")
+
+local AntiAFK = GeneralSection:AddToggle("AntiAFK", {
+	Title = "Anti-AFK",
+	Description = "Prevents being kicked for inactivity",
+	Default = true,
+})
+
+local AutoReconnect = GeneralSection:AddToggle("AutoReconnect", {
+	Title = "Auto-Reconnect",
+	Description = "Automatically reconnect on disconnect",
+	Default = true,
+})
+
+local RenderingEnabled = GeneralSection:AddToggle("RenderingEnabled", {
+	Title = "Rendering Enabled",
+	Description = "Enable 3D rendering (disable for performance)",
+	Default = true,
+})
+
+--// TAB: Eggs
 do
 	-- Egg buyer state
 	local eggBuyerState = {
@@ -109,49 +124,6 @@ do
 			lastScanTime = 0,
 		},
 	}
-
-	-- Helper function to get player's assigned island name
-	local function getPlayerIslandName()
-		-- Wait for assigned island if not set yet (matching decompiled game code)
-		local assignedIsland = LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
-		if not assignedIsland then
-			-- Try waiting for it (with timeout to avoid infinite wait)
-			local attempts = 0
-			while not assignedIsland and attempts < 50 do
-				task.wait(0.1)
-				assignedIsland = LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
-				attempts = attempts + 1
-			end
-		end
-
-		return assignedIsland
-	end
-
-	-- Helper function to check if an island folder belongs to the player
-	local function isPlayerIsland(islandFolder)
-		if not islandFolder then
-			return false
-		end
-
-		local playerIslandName = getPlayerIslandName()
-		if not playerIslandName then
-			return false -- Can't determine, so return false to be safe
-		end
-
-		-- Primary check: folder name matches AssignedIslandName (e.g., "Island_3" == "Island_3")
-		if islandFolder.Name == playerIslandName then
-			return true
-		end
-
-		-- Secondary check: Compare AssignedIslandName with IslandID attribute
-		-- This matches the decompiled game code logic
-		local islandID = islandFolder:GetAttribute(CONSTANTS.ISLAND_ID)
-		if islandID and islandID == playerIslandName then
-			return true
-		end
-
-		return false
-	end
 
 	local Section = Tabs.Eggs:AddSection("Auto Buy Egg")
 
@@ -178,7 +150,7 @@ do
 		Title = "Select Mutations",
 		Values = { "Golden", "Diamond", "Fire", "Electric", "Dino", "Snow", "Halloween" },
 		Multi = true,
-		Default = { "Snow", "Halloween" },
+		Default = { "Dino", "Snow", "Halloween" },
 	})
 
 	-- Auto Buy Egg: toggle
@@ -188,66 +160,22 @@ do
 		Default = false,
 	})
 
-	-- Update filters when dropdowns change
-	SelectEggs:OnChanged(function()
-		print("Selected eggs changed")
-	end)
-
-	SelectMutations:OnChanged(function()
-		print("Selected mutations changed")
-	end)
-
-	-- Helper function to find player's island folder
-	local function findPlayerIslandFolder(eggsFolder)
-		local playerIslandName = getPlayerIslandName()
-		if not playerIslandName then
-			return nil
-		end
-
-		-- Try to find island by IslandID attribute first
-		for _, islandFolder in pairs(eggsFolder:GetChildren()) do
-			if islandFolder.Name:match("Island_%d+") then
-				if isPlayerIsland(islandFolder) then
-					return islandFolder
-				end
-			end
-		end
-
-		-- Fallback: try to find by name directly
-		local islandFolder = eggsFolder:FindFirstChild(playerIslandName)
-		if islandFolder then
-			return islandFolder
-		end
-
-		return nil
-	end
-
 	-- Egg detection function - ONLY scans player's island
 	local function findEggsInReplicatedStorage()
 		local eggs = {}
-		local eggsFolder = ReplicatedStorage:FindFirstChild(CONSTANTS.EGGS_FOLDER)
-		if not eggsFolder then
-			return eggs
-		end
 
-		-- Only find eggs from player's assigned island
-		local playerIslandFolder = findPlayerIslandFolder(eggsFolder)
-		if not playerIslandFolder then
-			return eggs
-		end
+		for _, egg in pairs(Eggs[AssignedIslandName]:GetChildren()) do
+			local uid = egg:GetAttribute("UID")
+			local mutation = egg:GetAttribute("M")
+			local eggType = egg:GetAttribute("T")
 
-		for _, eggObject in pairs(playerIslandFolder:GetChildren()) do
-			local uid = eggObject:GetAttribute(CONSTANTS.UID)
-			local mutation = eggObject:GetAttribute(CONSTANTS.MUTATION)
-			local eggType = eggObject:GetAttribute(CONSTANTS.EGG_TYPE)
-
-			if uid or eggObject.Name:match("^[a-f0-9]+$") then
+			if uid or egg.Name:match("^[a-f0-9]+$") then
 				table.insert(eggs, {
-					id = uid or eggObject.Name,
-					name = tostring(eggType or eggObject.Name),
+					id = uid or egg.Name,
+					name = tostring(eggType or egg.Name),
 					mutation = tostring(mutation or "None"),
-					island = playerIslandFolder.Name,
-					object = eggObject,
+					island = AssignedIslandName,
+					object = egg,
 				})
 			end
 		end
@@ -255,111 +183,48 @@ do
 		return eggs
 	end
 
-	-- Filter matching function
-	local function findMatchingEggs()
-		local matchingEggs = {}
-		local selectedEggs = {}
-		local selectedMutations = {}
-
-		-- Get selected eggs
-		for egg, state in next, Options.SelectEggs.Value do
-			if state then
-				table.insert(selectedEggs, egg)
-			end
-		end
-
-		-- Get selected mutations
-		for mutation, state in next, Options.SelectMutations.Value do
-			if state then
-				table.insert(selectedMutations, mutation)
-			end
-		end
-
-		-- Check each detected egg
-		for _, eggInfo in pairs(eggBuyerState.eggData.conveyorEggs) do
-			local eggMatches = false
-			local mutationMatches = false
-
-			-- Check if egg name matches
-			for _, selectedEgg in pairs(selectedEggs) do
-				if tostring(eggInfo.name):lower() == tostring(selectedEgg):lower() then
-					eggMatches = true
-					break
-				end
-			end
-
-			-- Check if mutation matches
-			for _, selectedMutation in pairs(selectedMutations) do
-				if tostring(eggInfo.mutation):lower() == tostring(selectedMutation):lower() then
-					mutationMatches = true
-					break
-				end
-			end
-
-			if eggMatches and mutationMatches then
-				table.insert(matchingEggs, eggInfo)
-			end
-		end
-
-		return matchingEggs
-	end
-
 	-- Purchase function
-	local function attemptPurchaseEgg(eggInfo)
-		local characterRemote = getRemote(CONSTANTS.CHARACTER_REMOTE)
-		if characterRemote then
-			local success, error = pcall(function()
-				characterRemote:FireServer("BuyEgg", eggInfo.id)
-			end)
+	local function attemptPurchaseEgg(egg)
+		local success, error = pcall(function()
+			CharacterRE:FireServer("BuyEgg", egg.id)
+		end)
 
-			if success then
-				print("✅ Purchase attempt sent for: " .. eggInfo.name .. " (" .. eggInfo.mutation .. ")")
-				table.insert(eggBuyerState.eggData.purchasedEggs, {
-					id = eggInfo.id,
-					name = eggInfo.name,
-					mutation = eggInfo.mutation,
-					timestamp = os.time(),
-					timeString = os.date("%H:%M:%S"),
-				})
-				return true
-			else
-				print("❌ Purchase failed: " .. tostring(error))
-			end
+		if success then
+			table.insert(eggBuyerState.eggData.purchasedEggs, {
+				id = egg.id,
+				name = egg.name,
+				mutation = egg.mutation,
+				timestamp = os.time(),
+				timeString = os.date("%H:%M:%S"),
+			})
+			return true
+		else
+			return false
 		end
-		return false
 	end
 
 	-- Set up streaming for player's island ONLY
 	local function setupPlayerIslandStreaming(islandFolder)
-		-- Only set up if this is the player's island
-		if not isPlayerIsland(islandFolder) then
-			return
-		end
-
 		-- Listen for new eggs being added to this island
-		local eggConnection = islandFolder.ChildAdded:Connect(function(eggObject)
+		local eggConnection = islandFolder.ChildAdded:Connect(function(egg)
 			if Fluent.Unloaded then
 				return
 			end
 
-			wait(0.1) -- Small delay to ensure attributes are set
+			local uid = egg:GetAttribute("UID")
+			local mutation = egg:GetAttribute("M")
+			local eggType = egg:GetAttribute("T")
 
-			local uid = eggObject:GetAttribute(CONSTANTS.UID)
-			local mutation = eggObject:GetAttribute(CONSTANTS.MUTATION)
-			local eggType = eggObject:GetAttribute(CONSTANTS.EGG_TYPE)
-
-			if uid or eggObject.Name:match("^[a-f0-9]+$") then
+			if uid or egg.Name:match("^[a-f0-9]+$") then
 				local eggInfo = {
-					id = uid or eggObject.Name,
-					name = tostring(eggType or eggObject.Name),
+					id = uid or egg.Name,
+					name = tostring(eggType or egg.Name),
 					mutation = tostring(mutation or "None"),
 					island = islandFolder.Name,
-					object = eggObject,
+					object = egg,
 				}
 
 				table.insert(eggBuyerState.eggData.conveyorEggs, eggInfo)
-
-				-- print("🥚 New egg detected: " .. eggInfo.name .. " (" .. eggInfo.mutation .. ") on " .. eggInfo.island)
 
 				-- Auto-purchase if enabled and egg matches filters
 				if Options.AutoBuyEgg.Value then
@@ -405,15 +270,14 @@ do
 		table.insert(eggBuyerState.connections, eggConnection)
 
 		-- Listen for eggs being removed
-		local eggRemovedConnection = islandFolder.ChildRemoved:Connect(function(eggObject)
+		local eggRemovedConnection = islandFolder.ChildRemoved:Connect(function(egg)
 			if Fluent.Unloaded then
 				return
 			end
 
 			for i, eggInfo in pairs(eggBuyerState.eggData.conveyorEggs) do
-				if eggInfo.object == eggObject then
+				if eggInfo.object == egg then
 					table.remove(eggBuyerState.eggData.conveyorEggs, i)
-					-- print("🥚 Egg removed: " .. eggInfo.name)
 					break
 				end
 			end
@@ -430,65 +294,33 @@ do
 
 		eggBuyerState.isRunning = true
 
-		-- Find or wait for Eggs folder
-		local eggsFolder = ReplicatedStorage:FindFirstChild(CONSTANTS.EGGS_FOLDER)
-		if not eggsFolder then
-			eggsFolder = ReplicatedStorage:WaitForChild("Eggs", 10)
-			if not eggsFolder then
-				print("❌ Eggs folder not found!")
-				return
-			end
-		end
-
-		-- Get player's assigned island name
-		local playerIslandName = getPlayerIslandName()
-		if not playerIslandName then
-			print("❌ Could not determine your assigned island!")
-			return
-		end
-
-		print("🚀 Starting event-based egg streaming for YOUR island: " .. tostring(playerIslandName))
-
 		-- Find and set up streaming ONLY for player's island folder
-		local playerIslandFolder = findPlayerIslandFolder(eggsFolder)
+		local playerIslandFolder = Eggs[AssignedIslandName]
 		if playerIslandFolder then
-			print("   📡 Monitoring " .. playerIslandFolder.Name)
 			setupPlayerIslandStreaming(playerIslandFolder)
 		else
-			print("   ⚠️ Your island folder not found yet, will retry...")
 			-- Try to wait for it or check periodically
 			local attempts = 0
 			task.spawn(function()
 				while not playerIslandFolder and attempts < 50 and not Fluent.Unloaded do
 					task.wait(0.5)
-					playerIslandFolder = findPlayerIslandFolder(eggsFolder)
-					if playerIslandFolder then
-						print("   📡 Found and monitoring " .. playerIslandFolder.Name)
-						setupPlayerIslandStreaming(playerIslandFolder)
-						break
-					end
+					playerIslandFolder = Eggs[AssignedIslandName]
 					attempts = attempts + 1
 				end
+				setupPlayerIslandStreaming(playerIslandFolder)
 			end)
 		end
-
-		-- Listen for player's island being added (if not present yet)
-		local islandConnection = eggsFolder.ChildAdded:Connect(function(islandFolder)
+		local islandConnection = Eggs[AssignedIslandName].ChildAdded:Connect(function(islandFolder)
 			if Fluent.Unloaded then
 				return
 			end
-			if islandFolder.Name:match("Island_%d+") and isPlayerIsland(islandFolder) then
-				print("   📡 Your island detected: " .. islandFolder.Name)
-				setupPlayerIslandStreaming(islandFolder)
-			end
+			setupPlayerIslandStreaming(Eggs[AssignedIslandName])
 		end)
 
 		table.insert(eggBuyerState.connections, islandConnection)
 
 		-- Initial scan
 		eggBuyerState.eggData.conveyorEggs = findEggsInReplicatedStorage()
-
-		print("✅ Egg streaming active for your island only!")
 	end
 
 	-- Stop monitoring function
@@ -505,121 +337,16 @@ do
 			end
 		end
 		eggBuyerState.connections = {}
-
-		print("🛑 Egg monitoring stopped!")
 	end
 
 	-- Connect auto buy toggle
 	AutoBuyEgg:OnChanged(function(Value)
 		if Value then
 			startEggMonitoring()
-			Fluent:Notify({
-				Title = "Auto Buy Enabled",
-				Content = "Automatically purchasing selected eggs from your island",
-				Duration = 3,
-			})
 		else
 			stopEggMonitoring()
-			Fluent:Notify({
-				Title = "Auto Buy Disabled",
-				Content = "Stopped auto-purchasing eggs",
-				Duration = 3,
-			})
 		end
 	end)
-
-	-- Add status section
-	local StatusSection = Tabs.Eggs:AddSection("Status")
-
-	StatusSection:AddButton({
-		Title = "Start Monitoring",
-		Description = "Begin monitoring for eggs",
-		Callback = function()
-			startEggMonitoring()
-			-- Fluent:Notify({
-			--     Title = "Monitoring Started",
-			--     Content = "Now scanning for eggs",
-			--     Duration = 3
-			-- })
-		end,
-	})
-
-	StatusSection:AddButton({
-		Title = "Stop Monitoring",
-		Description = "Stop monitoring for eggs",
-		Callback = function()
-			stopEggMonitoring()
-			-- Fluent:Notify({
-			--     Title = "Monitoring Stopped",
-			--     Content = "Stopped scanning for eggs",
-			--     Duration = 3
-			-- })
-		end,
-	})
-
-	StatusSection:AddButton({
-		Title = "Scan Now",
-		Description = "Force scan for available eggs",
-		Callback = function()
-			eggBuyerState.eggData.conveyorEggs = findEggsInReplicatedStorage()
-			local eggs = eggBuyerState.eggData.conveyorEggs
-			local matching = findMatchingEggs()
-			-- Fluent:Notify({
-			--     Title = "Scan Complete",
-			--     Content = string.format("Found %d eggs, %d matching filters", #eggs, #matching),
-			--     Duration = 5
-			-- })
-		end,
-	})
-
-	StatusSection:AddButton({
-		Title = "Show Purchased Eggs",
-		Description = "Display recently purchased eggs",
-		Callback = function()
-			local purchased = eggBuyerState.eggData.purchasedEggs
-			local message = ""
-			if #purchased > 0 then
-				for i, egg in pairs(purchased) do
-					message = message .. egg.name .. " (" .. egg.mutation .. ") - " .. egg.timeString
-					if i < #purchased then
-						message = message .. "\n"
-					end
-				end
-			else
-				message = "No eggs purchased yet"
-			end
-
-			Fluent:Notify({
-				Title = "Purchased Eggs",
-				Content = message,
-				Duration = 8,
-			})
-		end,
-	})
-
-	StatusSection:AddButton({
-		Title = "Show My Island",
-		Description = "Display your assigned island name",
-		Callback = function()
-			local islandName = getPlayerIslandName()
-			if islandName then
-				Fluent:Notify({
-					Title = "Your Island",
-					Content = "Assigned Island: " .. tostring(islandName),
-					Duration = 5,
-				})
-			else
-				Fluent:Notify({
-					Title = "Island Not Found",
-					Content = "Could not determine your assigned island. Try again later.",
-					Duration = 5,
-				})
-			end
-		end,
-	})
-
-	-- Don't auto-start monitoring - let the toggle control it
-	-- startEggMonitoring()
 
 	-- Cleanup when Fluent is unloaded
 	task.spawn(function()
@@ -631,7 +358,234 @@ do
 	end)
 end
 
--- Lottery Tab Content
+--// TAB: Food
+do
+	-- Load food config from ResPetFood
+	local foodConfig = {}
+	local foodNames = {}
+
+	local function loadFoodConfig()
+		-- Try to require the ResPetFood ModuleScript from Config (if it exists and is a ModuleScript)
+		local success, config = pcall(function()
+			local resPetFood = Config.ResPetFood
+			if resPetFood and resPetFood:IsA("ModuleScript") then
+				return require(resPetFood)
+			end
+			return nil
+		end)
+
+		if success and config then
+			foodConfig = config
+			-- Extract food names from config
+			foodNames = {} -- Clear existing list
+			for foodName, foodData in pairs(config) do
+				if type(foodData) == "table" and foodData.ID then
+					table.insert(foodNames, foodName)
+				end
+			end
+			return true
+		end
+
+		return false
+	end
+
+	-- Food buyer state
+	local foodBuyerState = {
+		purchasedFoods = {},
+		loopTask = nil, -- Track the running loop task
+		foodStoreConnection = nil, -- Track the FoodStore attribute listener
+	}
+
+	-- Function to buy selected foods when store refreshes (defined after helper functions)
+	local buySelectedFoods
+
+	-- Setup FoodStore attribute listener
+	local function setupFoodStoreListener()
+		-- Listen for V attribute changes (store refresh)
+		foodBuyerState.foodStoreConnection = FoodStore:GetAttributeChangedSignal("V"):Connect(function()
+			-- local newValue = FoodStore:GetAttribute("V")
+			buySelectedFoods()
+		end)
+
+		-- Also buy immediately if auto-buy is already enabled
+		if Options.AutoBuyFood.Value then
+			task.wait(0.5) -- Small delay to ensure everything is ready
+			buySelectedFoods()
+		end
+	end
+
+	-- Purchase food function
+	local function attemptPurchaseFood(foodName, quantity)
+		local foodStoreRE = Remote.FoodStoreRE
+		for i = 1, quantity do
+			foodStoreRE:FireServer(foodName)
+
+			if i < quantity then
+				task.wait(0.1)
+			end
+		end
+
+		return false
+	end
+
+	-- Helper function to get selected foods from multi-dropdown
+	local function getSelectedFoods()
+		local selectedFoods = {}
+
+		if not Options.SelectFood then
+			warn("❌ Options.SelectFood is nil!")
+			return selectedFoods
+		end
+
+		local foodValue = Options.SelectFood.Value
+
+		if foodValue then
+			if type(foodValue) == "table" then
+				for foodName, isSelected in pairs(foodValue) do
+					if isSelected then
+						-- If config is loaded and has data, verify food exists in it; otherwise trust the selection
+						local configEmpty = not foodConfig or next(foodConfig) == nil
+						if configEmpty or foodConfig[foodName] then
+							table.insert(selectedFoods, foodName)
+						end
+					end
+				end
+			else
+				-- Handle case where it might be a string (single selection fallback)
+				if foodConfig[tostring(foodValue)] then
+					table.insert(selectedFoods, tostring(foodValue))
+				end
+			end
+		end
+		return selectedFoods
+	end
+
+	-- Define buySelectedFoods function after helper functions are available
+	buySelectedFoods = function()
+		if not Options.AutoBuyFood.Value then
+			return -- Auto-buy is disabled
+		end
+
+		local selectedFoods = getSelectedFoods()
+		if #selectedFoods == 0 then
+			return -- No foods selected
+		end
+
+		for _, foodName in pairs(selectedFoods) do
+			if foodConfig[foodName] then
+				local foodData = foodConfig[foodName]
+				local quantity = foodData.SellStock2 or 1
+				attemptPurchaseFood(foodName, quantity)
+			end
+		end
+	end
+
+	-- Setup FoodStore listener when auto-buy is enabled
+	local function startAutoBuyLoop()
+		-- Setup listener if not already done
+		if not foodBuyerState.foodStoreConnection then
+			setupFoodStoreListener()
+		end
+
+		-- Buy immediately when toggled on
+		task.spawn(function()
+			task.wait(0.5) -- Small delay
+			buySelectedFoods()
+		end)
+	end
+
+	-- Stop auto buy function
+	local function stopAutoBuyLoop()
+		if foodBuyerState.foodStoreConnection then
+			foodBuyerState.foodStoreConnection:Disconnect()
+			foodBuyerState.foodStoreConnection = nil
+		end
+	end
+
+	-- Load food config BEFORE creating the dropdown
+	if not loadFoodConfig() then
+		foodNames = {
+			"Strawberry",
+			"Blueberry",
+			"Watermelon",
+			"Apple",
+			"Orange",
+			"Corn",
+			"Banana",
+			"Grape",
+			"Pear",
+			"Pineapple",
+			"DragonFruit",
+			"GoldMango",
+			"BloodstoneCycad",
+			"ColossalPinecone",
+			"VoltGinkgo",
+			"DeepseaPearlFruit",
+			"CandyCorn",
+			"Durian",
+			"Pumpkin",
+			"FrankenKiwi",
+		}
+	end
+
+	local FoodSection = Tabs.Food:AddSection("Auto Buy Food")
+	local SelectFood = FoodSection:AddDropdown("SelectFood", {
+		Title = "Select Food",
+		Description = "Choose which foods to auto-buy (multiple selections allowed)",
+		Values = foodNames,
+		Multi = true,
+		Default = {
+			"Pear",
+			"Pineapple",
+			"DragonFruit",
+			"GoldMango",
+			"BloodstoneCycad",
+			"ColossalPinecone",
+			"VoltGinkgo",
+			"DeepseaPearlFruit",
+			"CandyCorn",
+			"Durian",
+			"Pumpkin",
+			"FrankenKiwi",
+		},
+	})
+
+	-- Auto Buy Food: toggle
+	local AutoBuyFood = FoodSection:AddToggle("AutoBuyFood", {
+		Title = "Auto Buy Food",
+		Description = "Automatically buy selected food every 5 minutes",
+		Default = false,
+	})
+
+	AutoBuyFood:OnChanged(function(Value)
+		local success, err = pcall(function()
+			if Value then
+				startAutoBuyLoop()
+			else
+				stopAutoBuyLoop()
+			end
+		end)
+
+		if not success then
+			warn("❌ ERROR in AutoBuyFood OnChanged: " .. tostring(err))
+		end
+	end)
+
+	-- Setup FoodStore listener on script load
+	task.spawn(function()
+		setupFoodStoreListener()
+	end)
+
+	-- Cleanup when Fluent is unloaded
+	task.spawn(function()
+		while not Fluent.Unloaded do
+			task.wait(0.1)
+		end
+		stopAutoBuyLoop()
+	end)
+end
+
+--// TAB: Lottery
 do
 	-- Define available codes
 	local lotteryCodes = {
@@ -648,32 +602,19 @@ do
 		"DS5523YSQ3C",
 		"ADQZP3MBW6N",
 		"ZTWPH3WW8SJ",
+		"N5HZKRRT2DF",
 	}
 
 	-- Function to get current lottery ticket count
 	local function getLotteryTicketCount()
-		local Data = PlayerGui:FindFirstChild("Data")
-		if Data then
-			local Asset = Data:FindFirstChild("Asset")
-			if Asset then
-				return Asset:GetAttribute("LotteryTicket") or 0
-			end
-		end
-		return 0
+		return Data.Asset:GetAttribute("LotteryTicket")
 	end
 
 	-- Function to check if code is already redeemed
 	local function isCodeRedeemed(code)
-		local Data = PlayerGui:FindFirstChild("Data")
-		if Data then
-			local UserFlag = Data:FindFirstChild("UserFlag")
-			if UserFlag then
-				local attributeName = "RC_" .. code
-				local attributeValue = UserFlag:GetAttribute(attributeName)
-				return attributeValue == true
-			end
-		end
-		return false
+		local attributeName = "RC_" .. code
+		local attributeValue = Data.UserFlag:GetAttribute(attributeName)
+		return attributeValue == true
 	end
 
 	-- Function to redeem a single code
@@ -684,7 +625,7 @@ do
 				["code"] = code,
 			},
 		}
-		ReplicatedStorage.Remote.RedemptionCodeRE:FireServer(unpack(args))
+		RedemptionCodeRE:FireServer(unpack(args))
 	end
 
 	-- Function to use lottery tickets
@@ -695,7 +636,7 @@ do
 				["count"] = count,
 			},
 		}
-		ReplicatedStorage.Remote.LotteryRE:FireServer(unpack(args))
+		LotteryRE:FireServer(unpack(args))
 	end
 
 	-- Add Redeem All Codes button
@@ -774,446 +715,8 @@ do
 	})
 end
 
--- Food Tab Content - Auto Buy Food Integration
+--// TAB: Trade
 do
-	print("🚀🚀🚀 STARTING AUTO BUY FOOD INTEGRATION 🚀🚀🚀")
-
-	-- Load food config from ResPetFood
-	local foodConfig = {}
-	local foodNames = {}
-
-	local function loadFoodConfig()
-		local success, config = pcall(function()
-			local configFolder = ReplicatedStorage:FindFirstChild("Config")
-			if configFolder then
-				local resPetFood = configFolder:FindFirstChild("ResPetFood")
-				if resPetFood then
-					-- If it's a ModuleScript, require it
-					if resPetFood:IsA("ModuleScript") then
-						return require(resPetFood)
-					end
-				end
-			end
-			return nil
-		end)
-
-		if success and config then
-			foodConfig = config
-			-- Extract food names from config
-			foodNames = {} -- Clear existing list
-			for foodName, foodData in pairs(config) do
-				if type(foodData) == "table" and foodData.ID then
-					table.insert(foodNames, foodName)
-				end
-			end
-			-- Sort food names alphabetically
-			table.sort(foodNames)
-			return true
-		end
-
-		-- Fallback: try to wait for it
-		local configFolder = ReplicatedStorage:WaitForChild("Config", 5)
-		if configFolder then
-			local resPetFood = configFolder:WaitForChild("ResPetFood", 5)
-			if resPetFood and resPetFood:IsA("ModuleScript") then
-				local success2, config2 = pcall(function()
-					return require(resPetFood)
-				end)
-				if success2 and config2 then
-					foodConfig = config2
-					foodNames = {} -- Clear existing list
-					for foodName, foodData in pairs(config2) do
-						if type(foodData) == "table" and foodData.ID then
-							table.insert(foodNames, foodName)
-						end
-					end
-					table.sort(foodNames)
-					return true
-				end
-			end
-		end
-
-		return false
-	end
-
-	-- Food buyer state
-	local foodBuyerState = {
-		purchasedFoods = {},
-		loopTask = nil, -- Track the running loop task
-		foodStoreConnection = nil, -- Track the FoodStore attribute listener
-	}
-
-	-- Function to buy selected foods when store refreshes (defined after helper functions)
-	local buySelectedFoods
-
-	-- Setup FoodStore attribute listener
-	local function setupFoodStoreListener()
-		local Data = PlayerGui:WaitForChild("Data", 10)
-		if not Data then
-			warn("❌ Data folder not found")
-			return
-		end
-
-		local FoodStore = Data:WaitForChild("FoodStore", 10)
-		if not FoodStore then
-			warn("❌ FoodStore Configuration not found")
-			return
-		end
-
-		print("✅ FoodStore Configuration found, setting up attribute listener...")
-
-		-- Listen for V attribute changes (store refresh)
-		foodBuyerState.foodStoreConnection = FoodStore:GetAttributeChangedSignal("V"):Connect(function()
-			local newValue = FoodStore:GetAttribute("V")
-			print("🔄 FoodStore V attribute changed to: " .. tostring(newValue))
-			buySelectedFoods()
-		end)
-
-		print("✅ FoodStore attribute listener connected - will buy on store refresh!")
-
-		-- Also buy immediately if auto-buy is already enabled
-		if Options.AutoBuyFood.Value then
-			task.wait(0.5) -- Small delay to ensure everything is ready
-			buySelectedFoods()
-		end
-	end
-
-	-- Purchase food function
-	local function attemptPurchaseFood(foodName, quantity)
-		local remote = ReplicatedStorage:FindFirstChild("Remote")
-		if remote then
-			local foodStoreRE = remote:FindFirstChild("FoodStoreRE")
-			if foodStoreRE then
-				local success = true
-				local purchaseCount = 0
-
-				-- Buy quantity times (if remote doesn't accept quantity parameter)
-				for i = 1, quantity do
-					local success2, error = pcall(function()
-						foodStoreRE:FireServer(foodName)
-					end)
-
-					if success2 then
-						purchaseCount = purchaseCount + 1
-					else
-						success = false
-						print("❌ Food purchase failed: " .. tostring(error))
-						break
-					end
-
-					-- Small delay between purchases to avoid spam
-					if i < quantity then
-						task.wait(0.1)
-					end
-				end
-
-				if success and purchaseCount > 0 then
-					local timeString = os.date("%H:%M:%S")
-					table.insert(foodBuyerState.purchasedFoods, {
-						food = foodName,
-						quantity = purchaseCount,
-						timestamp = os.time(),
-						timeString = timeString,
-					})
-					-- print("✅ Purchased " .. purchaseCount .. "x " .. foodName .. " at " .. timeString)
-					return true
-				end
-			else
-				print("❌ FoodStoreRE remote not found")
-			end
-		else
-			print("❌ Remote folder not found")
-		end
-		return false
-	end
-
-	-- Helper function to get selected foods from multi-dropdown
-	local function getSelectedFoods()
-		local selectedFoods = {}
-
-		if not Options.SelectFood then
-			warn("❌ Options.SelectFood is nil!")
-			return selectedFoods
-		end
-
-		local foodValue = Options.SelectFood.Value
-
-		if foodValue then
-			if type(foodValue) == "table" then
-				for foodName, isSelected in pairs(foodValue) do
-					if isSelected then
-						-- If config is loaded and has data, verify food exists in it; otherwise trust the selection
-						local configEmpty = not foodConfig or next(foodConfig) == nil
-						if configEmpty or foodConfig[foodName] then
-							table.insert(selectedFoods, foodName)
-						end
-					end
-				end
-			else
-				-- Handle case where it might be a string (single selection fallback)
-				if foodConfig[tostring(foodValue)] then
-					table.insert(selectedFoods, tostring(foodValue))
-				end
-			end
-		end
-		return selectedFoods
-	end
-
-	-- Define buySelectedFoods function after helper functions are available
-	buySelectedFoods = function()
-		if not Options.AutoBuyFood.Value then
-			return -- Auto-buy is disabled
-		end
-
-		local selectedFoods = getSelectedFoods()
-		if #selectedFoods == 0 then
-			return -- No foods selected
-		end
-
-		print("🔄 FoodStore refreshed! Purchasing selected foods...")
-		for _, foodName in pairs(selectedFoods) do
-			if foodConfig[foodName] then
-				local foodData = foodConfig[foodName]
-				local quantity = foodData.SellStock2 or 1
-				-- print("🛒 Purchasing " .. quantity .. "x " .. foodName)
-				attemptPurchaseFood(foodName, quantity)
-			end
-		end
-	end
-
-	-- Setup FoodStore listener when auto-buy is enabled
-	local function startAutoBuyLoop()
-		print("🔄 Auto-buy enabled - FoodStore listener will handle purchases on refresh")
-
-		-- Setup listener if not already done
-		if not foodBuyerState.foodStoreConnection then
-			setupFoodStoreListener()
-		end
-
-		-- Buy immediately when toggled on
-		task.spawn(function()
-			task.wait(0.5) -- Small delay
-			buySelectedFoods()
-		end)
-	end
-
-	-- Stop auto buy function
-	local function stopAutoBuyLoop()
-		print("🛑 stopAutoBuyLoop called")
-		-- Disconnect FoodStore listener if connected
-		if foodBuyerState.foodStoreConnection then
-			foodBuyerState.foodStoreConnection:Disconnect()
-			foodBuyerState.foodStoreConnection = nil
-			print("🛑 FoodStore listener disconnected")
-		end
-	end
-
-	-- Load food config BEFORE creating the dropdown
-	print("📦 Loading food config...")
-	if loadFoodConfig() then
-		print("✅ Food config loaded: " .. #foodNames .. " foods found")
-	else
-		warn("⚠️ Could not load food config from ResPetFood. Retrying...")
-		task.wait(2)
-		if loadFoodConfig() then
-			print("✅ Food config loaded (retry): " .. #foodNames .. " foods found")
-		else
-			warn("❌ Failed to load food config. Using fallback list.")
-			-- Fallback: use food names from buy_food.lua
-			foodNames = {
-				"Strawberry",
-				"Blueberry",
-				"Watermelon",
-				"Apple",
-				"Orange",
-				"Corn",
-				"Banana",
-				"Grape",
-				"Pear",
-				"Pineapple",
-				"DragonFruit",
-				"GoldMango",
-				"BloodstoneCycad",
-				"ColossalPinecone",
-				"VoltGinkgo",
-				"DeepseaPearlFruit",
-				"CandyCorn",
-				"Durian",
-				"Pumpkin",
-				"FrankenKiwi",
-			}
-			print("⚠️ Using fallback food list with " .. #foodNames .. " foods")
-		end
-	end
-
-	if #foodNames == 0 then
-		warn("❌ No food names available! Cannot create food dropdown.")
-		return
-	end
-
-	-- Create Auto Buy Food section
-	print("📦 Creating Auto Buy Food section...")
-	if not Tabs or not Tabs.Food then
-		warn("❌ Tabs.Food does not exist! Cannot create Auto Buy Food section.")
-		return
-	end
-	local FoodSection = Tabs.Food:AddSection("Auto Buy Food")
-	print("✅ Auto Buy Food section created")
-
-	-- Select Food: multi dropdown
-	-- Default to empty - SaveManager will automatically restore saved values when config loads
-	-- This matches the pattern used by Auto Buy Egg section
-	local SelectFood = FoodSection:AddDropdown("SelectFood", {
-		Title = "Select Food",
-		Description = "Choose which foods to auto-buy (multiple selections allowed)",
-		Values = foodNames,
-		Multi = true,
-		Default = {
-			"Pear",
-			"Pineapple",
-			"DragonFruit",
-			"GoldMango",
-			"BloodstoneCycad",
-			"ColossalPinecone",
-			"VoltGinkgo",
-			"DeepseaPearlFruit",
-			"CandyCorn",
-			"Durian",
-			"Pumpkin",
-			"FrankenKiwi",
-		}, -- SaveManager will restore saved selections automatically
-	})
-
-	print("✅ SelectFood dropdown created with " .. #foodNames .. " foods")
-	print("📝 SaveManager will restore saved selections when config loads")
-
-	-- Auto Buy Food: toggle
-	local AutoBuyFood = FoodSection:AddToggle("AutoBuyFood", {
-		Title = "Auto Buy Food",
-		Description = "Automatically buy selected food every 5 minutes",
-		Default = false,
-	})
-
-	print("✅ AutoBuyFood toggle created")
-
-	-- Connect auto buy toggle (same pattern as Auto Buy Egg)
-	print("🔗 Connecting AutoBuyFood OnChanged callback...")
-	AutoBuyFood:OnChanged(function(Value)
-		print("🔔 AutoBuyFood toggle changed to: " .. tostring(Value))
-
-		local success, err = pcall(function()
-			if Value then
-				print("✅ Toggle is ON, getting selected foods...")
-				print("🔍 Checking loopTask state: " .. tostring(foodBuyerState.loopTask))
-				local selectedFoods = getSelectedFoods()
-				print("📋 Found " .. #selectedFoods .. " selected foods")
-
-				if #selectedFoods == 0 then
-					print("⚠️ No food selected! Details:")
-					print("  - Options.SelectFood exists: " .. tostring(Options.SelectFood ~= nil))
-					if Options.SelectFood then
-						print("  - SelectFood.Value type: " .. type(Options.SelectFood.Value))
-						print("  - SelectFood.Value: " .. tostring(Options.SelectFood.Value))
-					end
-					Fluent:Notify({
-						Title = "No Food Selected",
-						Content = "Please select at least one food first",
-						Duration = 3,
-					})
-					Options.AutoBuyFood:SetValue(false)
-					return
-				end
-
-				print("🔄 Starting auto buy loop...")
-				print("🔍 loopTask before start: " .. tostring(foodBuyerState.loopTask))
-				startAutoBuyLoop()
-				print("🔍 loopTask after start: " .. tostring(foodBuyerState.loopTask))
-				local foodList = table.concat(selectedFoods, ", ")
-				-- Fluent:Notify({
-				--     Title = "Auto Buy Enabled",
-				--     Content = "Automatically purchasing " .. foodList .. " every 5 minutes",
-				--     Duration = 3
-				-- })
-				print("✅ Auto buy loop started, notification sent")
-			else
-				print("🛑 Toggle is OFF, stopping loop...")
-				print("🔍 loopTask before stop: " .. tostring(foodBuyerState.loopTask))
-				stopAutoBuyLoop()
-				print("🔍 loopTask after stop: " .. tostring(foodBuyerState.loopTask))
-				Fluent:Notify({
-					Title = "Auto Buy Disabled",
-					Content = "Stopped auto-purchasing food",
-					Duration = 3,
-				})
-				print("✅ Loop stopped, notification sent")
-			end
-		end)
-
-		if not success then
-			warn("❌ ERROR in AutoBuyFood OnChanged: " .. tostring(err))
-			warn(debug.traceback())
-		end
-	end)
-	print("✅ AutoBuyFood OnChanged callback connected")
-
-	-- Backup: Monitor toggle state periodically in case OnChanged doesn't fire
-	task.spawn(function()
-		task.wait(2) -- Wait for SaveManager to load
-		local lastToggleState = nil
-
-		while not Fluent.Unloaded do
-			task.wait(0.5) -- Check every 0.5 seconds
-
-			local currentToggleState = Options.AutoBuyFood.Value
-
-			-- If toggle changed from false to true, and no loop is running, start it
-			if currentToggleState == true and lastToggleState == false and not foodBuyerState.loopTask then
-				print("🔄 BACKUP: Detected toggle ON but no loop running, starting loop...")
-				local selectedFoods = getSelectedFoods()
-				if #selectedFoods > 0 then
-					startAutoBuyLoop()
-					print("✅ BACKUP: Loop started via backup mechanism")
-				else
-					print("⚠️ BACKUP: No foods selected, cannot start loop")
-				end
-			end
-
-			-- If toggle changed from true to false, make sure loop is stopped
-			if currentToggleState == false and lastToggleState == true and foodBuyerState.loopTask then
-				print("🛑 BACKUP: Detected toggle OFF but loop still running, stopping...")
-				stopAutoBuyLoop()
-			end
-
-			lastToggleState = currentToggleState
-		end
-	end)
-
-	-- Setup FoodStore listener on script load
-	task.spawn(function()
-		task.wait(2) -- Wait for player to load
-		setupFoodStoreListener()
-	end)
-
-	-- Cleanup when Fluent is unloaded
-	task.spawn(function()
-		while not Fluent.Unloaded do
-			task.wait(0.1)
-		end
-		stopAutoBuyLoop()
-	end)
-	print("✅✅✅ AUTO BUY FOOD INTEGRATION COMPLETE ✅✅✅")
-end
-
--- Trade Tab Content - Auto Trading
-do
-	print("🔄 STARTING AUTO TRADE INTEGRATION 🔄")
-
-	-- Store references to global functions to avoid shadowing issues
-	local pairs = pairs
-	local tostring = tostring
-	local type = type
-	local table = table
-
 	-- Auto Trade State
 	local autoTradeState = {
 		enabled = false,
@@ -1224,44 +727,6 @@ do
 		connections = {},
 		lastTradeTime = os.time(), -- Track time of last trade
 	}
-
-	-- Wait for dependencies
-	local Shared, Pet, Format, ResMutate, TradeRE
-	local dependenciesLoaded = false
-
-	task.spawn(function()
-		local success, err = pcall(function()
-			print("⏳ [Auto Trade] Loading dependencies...")
-
-			-- Load required modules
-			Shared = require(ReplicatedStorage:WaitForChild("Shared", 10))
-			print("✅ [Auto Trade] Shared loaded")
-
-			Pet = Shared("Pet")
-			print("✅ [Auto Trade] Pet loaded")
-
-			Format = Shared("Format")
-			print("✅ [Auto Trade] Format loaded")
-
-			ResMutate = require(ReplicatedStorage:WaitForChild("Config", 10):WaitForChild("ResMutate", 10))
-			print("✅ [Auto Trade] ResMutate loaded")
-
-			TradeRE = ReplicatedStorage:WaitForChild("Remote", 10):WaitForChild("TradeRE", 10)
-			print("✅ [Auto Trade] TradeRE loaded")
-
-			dependenciesLoaded = true
-			print("✅ [Auto Trade] All dependencies loaded!")
-		end)
-
-		if not success then
-			print("❌ [Auto Trade] Failed to load: " .. tostring(err))
-			Fluent:Notify({
-				Title = "Auto Trade Error",
-				Content = tostring(err),
-				Duration = 5,
-			})
-		end
-	end)
 
 	-- Helper Functions
 	local function getPetValue(petData)
@@ -1296,25 +761,6 @@ do
 		return Format:Number2String(num, "en")
 	end
 
-	-- Function to request a new trade
-	local function requestTrade()
-		if not dependenciesLoaded or not TradeRE then
-			print("⚠️ [Auto Trade] Cannot request - dependencies not loaded")
-			return
-		end
-		if not autoTradeState.enabled then
-			print("⚠️ [Auto Trade] Cannot request - auto trade disabled")
-			return
-		end
-		TradeRE:FireServer({ event = "reqtrade" })
-		print("🔄 [Auto Trade] Trade requested")
-		Fluent:Notify({
-			Title = "Trade Request",
-			Content = "Requesting trade...",
-			Duration = 2,
-		})
-	end
-
 	-- Helper function to get table keys as strings
 	local function getKeys(tbl)
 		if not tbl or type(tbl) ~= "table" then
@@ -1328,20 +774,77 @@ do
 	end
 
 	-- Global webhook function for trade notifications
-	local function sendWebhookNotification(content)
+	local function sendTradeWebhook(heldPet, traderPets, acceptanceType, playerValue, traderValue, fairnessRatio)
+		if not Options.WebhookEnabled.Value then
+			return
+		end
 		if not Options.UrlInput or not Options.UrlInput.Value or Options.UrlInput.Value == "" then
-			return false
+			return
 		end
 
-		local webhookUrl = Options.UrlInput.Value
+		local fields = {}
+
+		-- Field for Your Pet
+		local yourPetField = {
+			name = "Your Pet",
+			value = string.format(
+				"%s (%s) - V: %s - %s\n",
+				tostring(heldPet.T),
+				tostring(heldPet.M),
+				formatNumber(tonumber(heldPet.V) or 0),
+				formatNumber(playerValue)
+			),
+			inline = true,
+		}
+		table.insert(fields, yourPetField)
+
+		-- Field for Trader Pets
+		local traderValueStr = ""
+		for _, pet in pairs(traderPets) do
+			traderValueStr = traderValueStr
+				.. string.format(
+					"- %s (%s) - V: %s - %s\n",
+					tostring(pet.T),
+					tostring(pet.M),
+					formatNumber(tonumber(pet.V) or 0),
+					formatNumber(getPetValue(pet))
+				)
+		end
+		local traderField = {
+			name = "Trader Pets",
+			value = traderValueStr,
+			inline = true,
+		}
+		table.insert(fields, traderField)
+
+		-- Field for Value Difference
+		local differenceField = {
+			name = "Value Difference",
+			value = string.format(
+				"+%s (%s fairness)",
+				formatNumber(traderValue - playerValue),
+				string.format("%.1f%%", fairnessRatio * 100)
+			),
+			inline = true,
+		}
+		table.insert(fields, differenceField)
+
+		local embed = {
+			author = EmbedSettings.Author,
+			description = string.format("**Trade Accepted** (%s)", acceptanceType),
+			fields = fields,
+			color = EmbedSettings.Color,
+			timestamp = DateTime.now():ToIsoDate(),
+		}
+
 		local data = {
-			["content"] = content,
+			embeds = { embed },
 		}
 
 		local success, err = pcall(function()
-			local jsonData = game:GetService("HttpService"):JSONEncode(data)
-			local response = request({
-				Url = webhookUrl,
+			local jsonData = HttpService:JSONEncode(data)
+			local response = HttpService:RequestAsync({
+				Url = Options.UrlInput.Value,
 				Method = "POST",
 				Headers = {
 					["Content-Type"] = "application/json",
@@ -1352,10 +855,8 @@ do
 
 		if success then
 			print("✅ [Webhook] Notification sent")
-			return true
 		else
 			print("❌ [Webhook] Failed to send: " .. tostring(err))
-			return false
 		end
 	end
 
@@ -1406,24 +907,26 @@ do
 			end
 
 			if not tradeData.data then
-				-- This is likely a bargain response or other event, not a trade offer
-				print("📨 [Auto Trade] Trade response received (not an offer)")
-				if type(tradeData) == "table" then
-					local keyVals = getKeyValues(tradeData)
-					if keyVals and type(keyVals) == "table" then
-						print("🔍 [Debug] Response data:", table.concat(keyVals, ", "))
+				-- Handle responses like bargainresult
+				if tradeData.event == "bargainresult" then
+					if not tradeData.result then
+						print("❌ [Auto Trade] Bargain failed")
+					else
+						print("✅ [Auto Trade] Bargain succeeded")
+					end
+				else
+					print("📨 [Auto Trade] Unknown trade response received")
+					if type(tradeData) == "table" then
+						local keyVals = getKeyValues(tradeData)
+						if keyVals and type(keyVals) == "table" then
+							print("🔍 [Debug] Response data:", table.concat(keyVals, ", "))
+						end
 					end
 				end
 				return
 			end
 
 			print("📨 [Auto Trade] Trade offer received")
-
-			if not dependenciesLoaded then
-				print("⚠️ [Auto Trade] Ignoring - dependencies not ready")
-				return
-			end
-
 			local data = tradeData.data
 
 			if not data.HoldPet or not data.TradePet then
@@ -1490,7 +993,7 @@ do
 			if Options.AutoAcceptPetNameToggle and Options.AutoAcceptPetNameToggle.Value then
 				local selectedPetNames = Options.AutoAcceptPetName and Options.AutoAcceptPetName.Value or {}
 				for i, pet in pairs(traderPets) do
-					local petType = pet.T or pet:GetAttribute(CONSTANTS.EGG_TYPE)
+					local petType = pet.T or pet:GetAttribute("T")
 					for petName, isSelected in pairs(selectedPetNames) do
 						if isSelected and tostring(petType):lower() == tostring(petName):lower() then
 							print("✅ [Auto Trade] Auto-accepting pet by name: " .. petType)
@@ -1498,37 +1001,7 @@ do
 							autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
 
 							-- Send webhook notification
-							local webhookMsg = "✅ **Trade Accepted** (Pet Name)\n\n"
-							webhookMsg = webhookMsg
-								.. "**Your Pet:**\n- Type: "
-								.. tostring(playerPet.T)
-								.. "\n- Mutation: "
-								.. tostring(playerPet.M)
-								.. "\n- V: "
-								.. formatNumber(tonumber(playerPet.V) or 0)
-								.. "\n- Value: "
-								.. formatNumber(playerValue)
-								.. "\n\n"
-							webhookMsg = webhookMsg .. "**Trader Pets:**\n"
-							for _, traderPet in pairs(traderPets) do
-								webhookMsg = webhookMsg
-									.. "- "
-									.. tostring(traderPet.T)
-									.. " ("
-									.. tostring(traderPet.M)
-									.. ") - V: "
-									.. formatNumber(tonumber(traderPet.V) or 0)
-									.. " - "
-									.. formatNumber(getPetValue(traderPet))
-									.. "\n"
-							end
-							webhookMsg = webhookMsg
-								.. "\n**Total Value Difference:** +"
-								.. formatNumber(traderValue - playerValue)
-								.. ", ("
-								.. string.format("%.1f%%", fairnessRatio * 100)
-								.. " fairness)"
-							sendWebhookNotification(webhookMsg)
+							sendTradeWebhook(playerPet, traderPets, "Pet Name", playerValue, traderValue, fairnessRatio)
 
 							return
 						end
@@ -1577,34 +1050,14 @@ do
 					end
 
 					-- Send webhook notification
-					local webhookMsg = "✅ **Trade Accepted** (Same Pet + More Value)\n\n"
-					webhookMsg = webhookMsg
-						.. "**Your Pet:**\n- Type: "
-						.. tostring(playerPet.T)
-						.. "\n- Mutation: "
-						.. tostring(playerPet.M)
-						.. "\n- V: "
-						.. formatNumber(tonumber(playerPet.V) or 0)
-						.. "\n- Value: "
-						.. formatNumber(playerValue)
-						.. "\n\n"
-					webhookMsg = webhookMsg .. "**Trader Pets:**\n"
-					for _, traderPet in pairs(traderPets) do
-						webhookMsg = webhookMsg
-							.. "- "
-							.. tostring(traderPet.T)
-							.. " ("
-							.. tostring(traderPet.M)
-							.. ") - V: "
-							.. formatNumber(tonumber(traderPet.V) or 0)
-							.. " - "
-							.. formatNumber(getPetValue(traderPet))
-							.. "\n"
-					end
-					webhookMsg = webhookMsg
-						.. "\n**Total Value Difference:** +"
-						.. formatNumber(traderValue - playerValue)
-					sendWebhookNotification(webhookMsg)
+					sendTradeWebhook(
+						playerPet,
+						traderPets,
+						"Same Pet + More Value",
+						playerValue,
+						traderValue,
+						fairnessRatio
+					)
 
 					return
 				elseif hasSamePet then
@@ -1629,9 +1082,8 @@ do
 			end
 
 			-- Check fairness threshold and acceptance mode
-			local minFairnessPercent = tonumber(
-				Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9
-			) or 0.9
+			local minFairnessPercent =
+				tonumber(Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9)
 			local acceptanceMode = Options.AcceptanceMode and Options.AcceptanceMode.Value or "Fairness Only"
 
 			print(
@@ -1678,37 +1130,7 @@ do
 
 			-- Send webhook notification if there are high-value pets
 			if #highValuePets > 0 then
-				local webhookMsg = "✅ **Trade Accepted** (High-Value Pet)\n\n"
-				webhookMsg = webhookMsg
-					.. "**Your Pet:**\n- Type: "
-					.. tostring(playerPet.T)
-					.. "\n- Mutation: "
-					.. tostring(playerPet.M)
-					.. "\n- V: "
-					.. formatNumber(tonumber(playerPet.V) or 0)
-					.. "\n- Value: "
-					.. formatNumber(playerValue)
-					.. "\n\n"
-				webhookMsg = webhookMsg .. "**Trader Pets:**\n"
-				for _, traderPet in pairs(traderPets) do
-					webhookMsg = webhookMsg
-						.. "- "
-						.. tostring(traderPet.T)
-						.. " ("
-						.. tostring(traderPet.M)
-						.. ") - V: "
-						.. formatNumber(tonumber(traderPet.V) or 0)
-						.. " - "
-						.. formatNumber(getPetValue(traderPet))
-						.. "\n"
-				end
-				webhookMsg = webhookMsg
-					.. "\n**Total Value Difference:** +"
-					.. formatNumber(traderValue - playerValue)
-					.. ", ("
-					.. string.format("%.1f%%", fairnessRatio * 100)
-					.. " fairness)"
-				sendWebhookNotification(webhookMsg)
+				sendTradeWebhook(playerPet, traderPets, "High-Value Pet", playerValue, traderValue, fairnessRatio)
 			end
 
 			-- Determine if trade should be accepted based on mode
@@ -1761,29 +1183,6 @@ do
 				print("✅ [Auto Trade] Accepting due to high-value pet")
 			end
 
-			-- Check if trader offers better value
-			if Options.RequireBetterValue and Options.RequireBetterValue.Value then
-				if traderValue < playerValue then
-					print("❌ [Auto Trade] Trader value too low")
-					TradeRE:FireServer({ event = "decline" })
-					autoTradeState.declinedTrades = autoTradeState.declinedTrades + 1
-
-					-- Re-focus pet after declining
-					local CharacterRE = ReplicatedStorage:FindFirstChild("Remote")
-						and ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
-					if CharacterRE then
-						CharacterRE:FireServer("Focus")
-						local petUID = Options.HeldPetUID and Options.HeldPetUID.Value or ""
-						if petUID ~= "" then
-							task.wait(1)
-							CharacterRE:FireServer("Focus", petUID)
-						end
-					end
-
-					return
-				end
-			end
-
 			-- Accept trade
 			print("✅ [Auto Trade] Accepting (Fairness: " .. string.format("%.1f%%", fairnessRatio * 100) .. ")")
 			TradeRE:FireServer({ event = "accept" })
@@ -1792,37 +1191,7 @@ do
 			-- Send webhook notification
 			local acceptanceReason = acceptByValue and "Pet Value Only"
 				or (acceptByFairness and "Fairness Only" or "Either")
-			local webhookMsg = "✅ **Trade Accepted** (" .. acceptanceReason .. ")\n\n"
-			webhookMsg = webhookMsg
-				.. "**Your Pet:**\n- Type: "
-				.. tostring(playerPet.T)
-				.. "\n- Mutation: "
-				.. tostring(playerPet.M)
-				.. "\n- V: "
-				.. formatNumber(tonumber(playerPet.V) or 0)
-				.. "\n- Value: "
-				.. formatNumber(playerValue)
-				.. "\n\n"
-			webhookMsg = webhookMsg .. "**Trader Pets:**\n"
-			for _, traderPet in pairs(traderPets) do
-				webhookMsg = webhookMsg
-					.. "- "
-					.. tostring(traderPet.T)
-					.. " ("
-					.. tostring(traderPet.M)
-					.. ") - V: "
-					.. formatNumber(tonumber(traderPet.V) or 0)
-					.. " - "
-					.. formatNumber(getPetValue(traderPet))
-					.. "\n"
-			end
-			webhookMsg = webhookMsg
-				.. "\n**Total Value Difference:** +"
-				.. formatNumber(traderValue - playerValue)
-				.. ", ("
-				.. string.format("%.1f%%", fairnessRatio * 100)
-				.. " fairness)"
-			sendWebhookNotification(webhookMsg)
+			sendTradeWebhook(playerPet, traderPets, acceptanceReason, playerValue, traderValue, fairnessRatio)
 
 			-- Clear held pet UID after accepting trade (pet is now traded away)
 			if Options.HeldPetUID then
@@ -1837,24 +1206,6 @@ do
 		end
 	end
 
-	-- Set up listener after handleTrade is defined
-	task.spawn(function()
-		while not dependenciesLoaded do
-			task.wait(0.1)
-		end
-
-		if TradeRE then
-			print("✅ [Auto Trade] Setting up trade listener")
-			TradeRE.OnClientEvent:Connect(handleTrade)
-
-			Fluent:Notify({
-				Title = "Auto Trade Ready",
-				Content = "Toggle ON then walk into trade zone",
-				Duration = 4,
-			})
-		end
-	end)
-
 	-- Create Trade Tab UI
 	local TradeSection = Tabs.Trade:AddSection("Auto Trade")
 
@@ -1865,59 +1216,31 @@ do
 	})
 
 	AutoTradeToggle:OnChanged(function(value)
-		print("🔄 [Auto Trade] Toggle changed to: " .. tostring(value))
 		autoTradeState.enabled = value
-
 		if value then
-			if dependenciesLoaded then
-				print("✅ [Auto Trade] Enabled - walk into trade zone with a pet")
-				-- Fluent:Notify({
-				--     Title = "Auto Trade ON",
-				--     Content = "Walk into trade zone with a held pet",
-				--     Duration = 4
-				-- })
-			else
-				print("⚠️ [Auto Trade] Dependencies not ready")
-				-- Fluent:Notify({
-				--     Title = "Not Ready",
-				--     Content = "Dependencies still loading, wait a moment",
-				--     Duration = 3
-				-- })
-			end
-		else
-			-- print("❌ [Auto Trade] Disabled")
-			-- Fluent:Notify({
-			--     Title = "Auto Trade OFF",
-			--     Content = "Trades will not be auto-managed",
-			--     Duration = 3
-			-- })
+			TradeRE.OnClientEvent:Connect(handleTrade)
 		end
 	end)
-
-	-- Initialize MinFairnessPercentage with default of 0.9 (90%)
-	if not Options.MinFairnessPercentage then
-		Options.MinFairnessPercentage = { Value = 0.9 }
-	end
 
 	local MinFairness = TradeSection:AddInput("MinFairness", {
 		Title = "Min Fairness %",
 		Description = "Minimum fairness ratio to accept trades (0-100)",
-		Default = "200",
+		Default = 200,
 		Numeric = true,
 		Finished = false,
-		Placeholder = "100",
 	})
 
 	MinFairness:OnChanged(function(value)
-		local numValue = tonumber(value) or 90
-		-- Clamp value to 0-1000 range (allowing for values > 100%)
-		numValue = math.max(0, math.min(1000, numValue))
+		local numValue = tonumber(value)
 
 		-- Update MinFairness in options to the 0-1000 value
 		Options.MinFairness.Value = numValue
 
-		-- Calculate MinFairnessPercentage (0-10 range for calculations, e.g., 200% = 2.0)
-		Options.MinFairnessPercentage.Value = numValue / 100
+		if not Options.MinFairnessPercentage then
+			Options.MinFairnessPercentage = { Value = Options.MinFairness.Value / 100 }
+		else
+			Options.MinFairnessPercentage.Value = numValue / 100
+		end
 
 		print(
 			"📊 [MinFairness] Changed to: "
@@ -1969,13 +1292,6 @@ do
 		Description = "Accept if trader offers same type+mutation pet AND more value",
 		Default = false,
 	})
-
-	local RequireBetterValue = TradeSection:AddToggle("RequireBetterValue", {
-		Title = "Require Better Value",
-		Description = "Only accept if trader offers >= your pet value",
-		Default = true,
-	})
-
 	local AutoBargain = TradeSection:AddToggle("AutoBargain", {
 		Title = "Auto Bargain",
 		Description = "Automatically bargain for better deals (max 2 times)",
@@ -1990,7 +1306,7 @@ do
 		Title = "Held Pet UID",
 		Description = "Pet UID to auto-equip after teleport (detected automatically)",
 		Default = "",
-		Placeholder = "ef1327451dd0459b904a3c7ae93ba486",
+		Placeholder = "towa",
 		Numeric = false,
 		Finished = true,
 	})
@@ -2003,39 +1319,27 @@ do
 	})
 
 	local function teleportToTradeZone(zoneNumber)
-		local assignedIsland = LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
-		if not assignedIsland then
-			print("⚠️ [Teleport] AssignedIslandName not found")
-			return false
-		end
+		-- print("🔍 [Teleport] Assigned Island: " .. AssignedIslandName)
 
-		print("🔍 [Teleport] Assigned Island: " .. assignedIsland)
+		-- Navigate to trade zone: Workspace > Art > Assigned_Island > ENV > TradeZone > Zone > TradeZone5 > TradePart
+		local tradePart =
+			Workspace.Art[AssignedIslandName].ENV.TradeZone.Zone[string.format("TradeZone%d", zoneNumber)].TradePart
 
-		-- Navigate to TradePart using helper
-		local path = { CONSTANTS.ART_FOLDER, assignedIsland, CONSTANTS.ENV_FOLDER, CONSTANTS.TRADE_ZONE_FOLDER, CONSTANTS.ZONE_FOLDER, "TradeZone" .. zoneNumber, "TradePart" }
-		local tradePart = navigatePath(Workspace, path)
-
-		if not tradePart then
-			print("⚠️ [Teleport] TradePart not found for zone " .. zoneNumber)
-			return false
-		end
-
-		-- Get CFrame and teleport
+		-- Get CFrame position
 		local targetCFrame = tradePart.CFrame
 		if not targetCFrame then
 			print("⚠️ [Teleport] Could not get CFrame from TradePart")
 			return false
 		end
 
+		-- Teleport player
 		local char = LocalPlayer.Character
-		local humanoidRootPart = char and char:FindFirstChild("HumanoidRootPart")
+		local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
 
 		if humanoidRootPart then
 			humanoidRootPart.CFrame = targetCFrame
-			print("✅ [Teleport] Teleported to TradeZone" .. zoneNumber)
 			return true
 		else
-			print("⚠️ [Teleport] HumanoidRootPart not found")
 			return false
 		end
 	end
@@ -2043,21 +1347,8 @@ do
 	TeleportToZone:OnChanged(function(value)
 		if value then
 			-- Teleport to Zone 1 by default
-			task.wait(0.5) -- Wait for character to load
-			local success = teleportToTradeZone(5)
-			if success then
-				-- Fluent:Notify({
-				--     Title = "Teleported",
-				--     Content = "Teleported to Trade Zone 1",
-				--     Duration = 3
-				-- })
-			else
-				-- Fluent:Notify({
-				--     Title = "Teleport Failed",
-				--     Content = "Could not find trade zone - check console",
-				--     Duration = 3
-				-- })
-			end
+			task.wait(0.5)
+			teleportToTradeZone(5)
 		end
 	end)
 
@@ -2068,17 +1359,9 @@ do
 			return false
 		end
 
-		local CharacterRE = ReplicatedStorage:FindFirstChild("Remote")
-			and ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
-
-		if not CharacterRE then
-			print("⚠️ [Pet Focus] CharacterRE not found")
-			return false
-		end
-
-		print("🐾 [Pet Focus] Equipping pet: " .. petUID)
+		-- print("🐾 [Pet Focus] Equipping pet: " .. petUID)
 		CharacterRE:FireServer("Focus", petUID)
-		print("✅ [Pet Focus] Focus command sent")
+		-- print("✅ [Pet Focus] Focus command sent")
 		return true
 	end
 
@@ -2086,10 +1369,10 @@ do
 	task.spawn(function()
 		task.wait(2) -- Wait for character and SaveManager to load
 		if Options.TeleportToZone and Options.TeleportToZone.Value then
-			print("🔄 [Teleport] Auto-teleport enabled, teleporting...")
-			local success = teleportToTradeZone(5)
+			-- print("🔄 [Teleport] Auto-teleport enabled, teleporting...")
+			local success = teleportToTradeZone(Options.TradeZone.Value)
 			if success then
-				print("✅ [Teleport] Auto-teleport successful")
+				-- print("✅ [Teleport] Auto-teleport successful")
 
 				-- Auto-equip pet after teleporting
 				task.wait(1) -- Wait for teleport to complete
@@ -2124,15 +1407,9 @@ do
 					if petUID ~= "" then
 						print("⏰ [Auto Re-equip] 5 minutes since last trade - re-equipping pet")
 
-						local CharacterRE = ReplicatedStorage:FindFirstChild("Remote")
-							and ReplicatedStorage.Remote:FindFirstChild("CharacterRE")
-						if CharacterRE then
-							CharacterRE:FireServer("Focus")
-							task.wait(1)
-							CharacterRE:FireServer("Focus", petUID)
-						else
-							equipPet(petUID)
-						end
+						CharacterRE:FireServer("Focus")
+						task.wait(1)
+						CharacterRE:FireServer("Focus", petUID)
 
 						autoTradeState.lastTradeTime = os.time() -- Reset timer after re-equipping
 					else
@@ -2145,105 +1422,26 @@ do
 		print("🛑 [Auto Re-equip] Stopped inactivity monitor")
 	end)
 
-	ZoneSection:AddParagraph({
-		Title = "Trade Zones",
-		Content = "Zone 1: Giraffe, Butterflyfish, Hippo\nZone 2: Okapi, Panther, Flounder\nZone 3: Kangaroo, Fox_E1, Gorilla\nZone 4: Dolphin, Dragon, Bear_E1\nZone 5: BluePhoenix, MetroGiraffe, Centaur, Toothless",
-	})
+	-- ZoneSection:AddParagraph({
+	-- 	Title = "Trade Zones",
+	-- 	Content = "Zone 1: Giraffe, Butterflyfish, Hippo\nZone 2: Okapi, Panther, Flounder\nZone 3: Kangaroo, Fox_E1, Gorilla\nZone 4: Dolphin, Dragon, Bear_E1\nZone 5: BluePhoenix, MetroGiraffe, Centaur, Toothless",
+	-- })
 
 	local TradeZoneDropdown = ZoneSection:AddDropdown("TradeZone", {
 		Title = "Select Trade Zone",
 		Description = "Switch to a different trade zone",
-		Values = { "Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5" },
+		Values = { 1, 2, 3, 4, 5 },
+		Numeric = true,
 		Multi = false,
-		Default = "Zone 5",
+		Default = 5,
 	})
 
 	TradeZoneDropdown:OnChanged(function(value)
-		if not dependenciesLoaded then
-			Fluent:Notify({
-				Title = "Not Ready",
-				Content = "Trade system still loading...",
-				Duration = 3,
-			})
-			return
-		end
-
-		local zoneLevel = tonumber(value:match("%d+"))
-		if zoneLevel and ReplicatedStorage then
-			local TradeZoneRE = ReplicatedStorage:FindFirstChild("Remote")
-				and ReplicatedStorage.Remote:FindFirstChild("TradeZoneRE")
-			if TradeZoneRE then
-				TradeZoneRE:FireServer("Switch", zoneLevel)
-				-- Fluent:Notify({
-				--     Title = "Zone Switched",
-				--     Content = "Switched to Trade Zone " .. zoneLevel,
-				--     Duration = 3
-				-- })
-			end
-		end
+		teleportToTradeZone(value)
 	end)
 
-	-- Statistics Section
-	local StatsSection = Tabs.Trade:AddSection("Statistics")
-
-	StatsSection:AddButton({
-		Title = "Show Stats",
-		Description = "Display trade statistics",
-		Callback = function()
-			local message = string.format(
-				"Trades: %d\nAccepted: %d\nDeclined: %d",
-				autoTradeState.tradeCount,
-				autoTradeState.acceptedTrades,
-				autoTradeState.declinedTrades
-			)
-
-			Fluent:Notify({
-				Title = "Trade Statistics",
-				Content = message,
-				Duration = 5,
-			})
-		end,
-	})
-
-	StatsSection:AddButton({
-		Title = "Reset Stats",
-		Description = "Reset trade counters",
-		Callback = function()
-			autoTradeState.tradeCount = 0
-			autoTradeState.acceptedTrades = 0
-			autoTradeState.declinedTrades = 0
-
-			Fluent:Notify({
-				Title = "Stats Reset",
-				Content = "All counters reset to 0",
-				Duration = 3,
-			})
-		end,
-	})
-
-	StatsSection:AddButton({
-		Title = "Request Trade",
-		Description = "Manually request a new trade",
-		Callback = function()
-			if dependenciesLoaded and TradeRE then
-				TradeRE:FireServer({ event = "reqtrade" })
-				Fluent:Notify({
-					Title = "Trade Requested",
-					Content = "Requesting new trade...",
-					Duration = 3,
-				})
-			else
-				Fluent:Notify({
-					Title = "Not Ready",
-					Content = "Trade system still loading...",
-					Duration = 3,
-				})
-			end
-		end,
-	})
-
 	-- Auto Claim Kitsune toggle
-	local AutoClaimKitsune = StatsSection:AddToggle("AutoClaimKitsune", {
+	local AutoClaimKitsune = TradeSection:AddToggle("AutoClaimKitsune", {
 		Title = "Auto Claim Kitsune",
 		Description = "Automatically claim Kitsune every 5 minutes",
 		Default = true,
@@ -2251,57 +1449,30 @@ do
 
 	-- Auto Claim Kitsune coroutine
 	task.spawn(function()
-		print("🦊 [Auto Claim Kitsune] Coroutine started")
 		while not Fluent.Unloaded do
 			task.wait(5 * 60) -- Wait 5 minutes
 
 			if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
-				if dependenciesLoaded and TradeRE then
-					-- Check if Kitsune counter is at 1000/1000
-					local assignedIsland = LocalPlayer and LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
+				local counterText =
+					Workspace.Art[AssignedIslandName].ENV.TradeZone.Zone.Kitsune.SellPart.BillboardGui.Root.Title.Text
+				local current = tonumber(counterText:match("(%d+)/1000"))
 
-					if assignedIsland then
-						local art = Workspace:FindFirstChild("Art")
-						local island = art and art:FindFirstChild(assignedIsland)
-						local env = island and island:FindFirstChild("ENV")
-						local tradeZone = env and env:FindFirstChild("TradeZone")
-						local zone = tradeZone and tradeZone:FindFirstChild("Zone")
-						local kitsune = zone and zone:FindFirstChild("Kitsune")
-						local sellPart = kitsune and kitsune:FindFirstChild("SellPart")
-						local billboard = sellPart and sellPart:FindFirstChild("BillboardGui")
-						local root = billboard and billboard:FindFirstChild("Root")
-						local title = root and root:FindFirstChild("Title")
+				if current < 1000 then
+					print("🦊 [Auto Claim Kitsune] Counter not ready: " .. (counterText or "unknown"))
+					return
+				end
 
-						if title then
-							local counterText = title.Text
-							-- Parse "xxx/1000" format
-							local current = tonumber(counterText:match("(%d+)/1000"))
+				local success, error = pcall(function()
+					TradeRE:FireServer({ event = "claimreward" })
+				end)
 
-							if current and current >= 1000 then
-								local success, error = pcall(function()
-									TradeRE:FireServer({ event = "claimreward" })
-								end)
-
-								if success then
-									print("🦊 [Auto Claim Kitsune] Claimed Kitsune reward (" .. counterText .. ")")
-								else
-									print("🦊 [Auto Claim Kitsune] Failed to claim: " .. tostring(error))
-								end
-							else
-								print("🦊 [Auto Claim Kitsune] Counter not ready: " .. (counterText or "unknown"))
-							end
-						else
-							print("🦊 [Auto Claim Kitsune] Counter text not found")
-						end
-					else
-						print("🦊 [Auto Claim Kitsune] AssignedIsland not found")
-					end
+				if success then
+					print("🦊 [Auto Claim Kitsune] Claimed Kitsune reward (" .. counterText .. ")")
 				else
-					print("🦊 [Auto Claim Kitsune] TradeRE not ready")
+					print("🦊 [Auto Claim Kitsune] Failed to claim: " .. tostring(error))
 				end
 			end
 		end
-		print("🦊 [Auto Claim Kitsune] Coroutine stopped")
 	end)
 
 	-- Cleanup
@@ -2315,8 +1486,6 @@ do
 			end
 		end
 	end)
-
-	print("✅ Auto Trade integration complete!")
 end
 
 do
@@ -2331,6 +1500,11 @@ do
 		Finished = true,
 	})
 
+	local WebhookEnabled = WebhookSection:AddToggle("WebhookEnabled", {
+		Title = "Webhook Enabled",
+		Default = true,
+	})
+
 	local MessageInput = WebhookSection:AddInput("MessageInput", {
 		Title = "Message",
 		Description = "Enter a custom message",
@@ -2341,6 +1515,9 @@ do
 	})
 
 	local function sendWebhook(content)
+		if not Options.WebhookEnabled.Value then
+			return
+		end
 		local webhookUrl = Options.UrlInput.Value or ""
 
 		if webhookUrl == "" then
@@ -2353,12 +1530,19 @@ do
 		end
 
 		local data = {
-			["content"] = content,
+			embeds = {
+				{
+					author = EmbedSettings.Author,
+					description = content,
+					color = EmbedSettings.Color,
+					timestamp = DateTime.now():ToIsoDate(),
+				},
+			},
 		}
 
 		local success, err = pcall(function()
-			local jsonData = game:GetService("HttpService"):JSONEncode(data)
-			local response = request({
+			local jsonData = HttpService:JSONEncode(data)
+			local response = HttpService:RequestAsync({
 				Url = webhookUrl,
 				Method = "POST",
 				Headers = {
@@ -2367,20 +1551,6 @@ do
 				Body = jsonData,
 			})
 		end)
-
-		-- if success then
-		--     Fluent:Notify({
-		--         Title = "Success",
-		--         Content = "Webhook sent!",
-		--         Duration = 3
-		--     })
-		-- else
-		--     Fluent:Notify({
-		--         Title = "Error",
-		--         Content = "Failed to send webhook",
-		--         Duration = 3
-		--     })
-		-- end
 	end
 
 	WebhookSection:AddButton({
@@ -2400,10 +1570,10 @@ do
 			local eggCount = 0
 			local eggGroups = {} -- Table to group eggs by mutation and type
 
-			for _, eggObj in pairs(eggData:GetChildren()) do
-				local m = eggObj:GetAttribute(CONSTANTS.MUTATION)
-				local t = eggObj:GetAttribute(CONSTANTS.EGG_TYPE)
-				local uid = eggObj:GetAttribute("UID")
+			for _, egg in pairs(eggData:GetChildren()) do
+				local m = egg:GetAttribute("M")
+				local t = egg:GetAttribute("T")
+				local uid = egg:GetAttribute("UID")
 
 				if m and t and uid then
 					eggCount = eggCount + 1
@@ -2493,36 +1663,34 @@ pcall(function()
 	SaveManager:LoadAutoloadConfig()
 end)
 
--- Debug: Check loaded MinFairness values
-print("🔍 [Config Load] MinFairness loaded as:", Options.MinFairness and Options.MinFairness.Value or "nil")
-print(
-	"🔍 [Config Load] MinFairnessPercentage loaded as:",
-	Options.MinFairnessPercentage and string.format("%.2f", Options.MinFairnessPercentage.Value) or "nil"
-)
-
--- Set default MinFairnessPercentage if not loaded or is 0
-if
-	not Options.MinFairnessPercentage
-	or not Options.MinFairnessPercentage.Value
-	or Options.MinFairnessPercentage.Value == 0
-then
-	Options.MinFairnessPercentage.Value = 0.9
-	print("🔄 [Config Load] Set MinFairnessPercentage default to 0.9 (90%)")
-end
-
--- Update input display to match loaded value (convert 0-1 range back to 0-100)
-if Options.MinFairness then
-	local displayValue = tostring(math.floor((Options.MinFairnessPercentage.Value or 0.9) * 100))
-	Options.MinFairness:SetValue(displayValue)
-end
-
 Window:SelectTab(1)
 
-Fluent:Notify({
-	Title = "Fluent",
-	Content = "The script has been loaded.",
-	Duration = 8,
-})
+--// Set rendering enabled
+RunService:Set3dRenderingEnabled(Options.RenderingEnabled.Value)
+
+--// Anti idle
+LocalPlayer.Idled:Connect(function()
+	if not Options.AntiAFK.Value then
+		return
+	end
+
+	VirtualUser:CaptureController()
+	VirtualUser:ClickButton2(Vector2.new())
+end)
+
+--// Auto reconnect
+GuiService.ErrorMessageChanged:Connect(function()
+	if not Options.AutoReconnect.Value then
+		return
+	end
+
+	--// Execute the script after teleporting
+	queue_on_teleport(
+		"loadstring(game:HttpGet('https://raw.githubusercontent.com/bunnygirlcapital/bunnygirlhub/main/696969.lua'))()"
+	)
+
+	TeleportService:TeleportToPlaceInstance(PlaceId, JobId, LocalPlayer)
+end)
 
 -- Auto-save configuration system (CONFIG_NAME defined above)
 local saveCooldown = 1 -- Save at most once per second (increased to reduce file conflicts)
