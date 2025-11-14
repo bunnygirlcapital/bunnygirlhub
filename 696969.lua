@@ -1,4 +1,8 @@
--- Bunny Girl Hub Version
+--[[
+    @author 0xfinder (0xfinder)
+    @description Build A Zoo script
+    https://www.roblox.com/games/105555311806207
+]]
 local VERSION = "1.0.0"
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -8,13 +12,20 @@ local InterfaceManager = loadstring(
 	game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua")
 )()
 
+--// Services
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
--- Constants
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer.PlayerGui
+
+--// Folders
+local AssignedIslandName = LocalPlayer:GetAttribute("AssignedIslandName")
+
+--// Constants
 local CONSTANTS = {
 	REMOTE_FOLDER = "Remote",
 	CHARACTER_REMOTE = "CharacterRE",
@@ -42,27 +53,22 @@ local CONSTANTS = {
 	EGG_TYPE = "T",
 }
 
--- Helper functions for common operations
-local function getLocalPlayer()
-	local player = Players.LocalPlayer
-	if not player then
-		-- Wait for LocalPlayer to be available
-		local attempts = 0
-		while not player and attempts < 50 do
-			task.wait(0.1)
-			player = Players.LocalPlayer
-			attempts = attempts + 1
-		end
-	end
-	return player
-end
-
 local function getRemote(name)
 	local remote = ReplicatedStorage:FindFirstChild(CONSTANTS.REMOTE_FOLDER)
 	if remote then
 		return remote:FindFirstChild(name)
 	end
 	return nil
+end
+
+-- Helper function to safely navigate object paths
+local function navigatePath(root, path)
+	local current = root
+	for _, name in ipairs(path) do
+		if not current then return nil end
+		current = current:FindFirstChild(name)
+	end
+	return current
 end
 
 local Window = Fluent:CreateWindow({
@@ -89,213 +95,8 @@ local Tabs = {
 
 local Options = Fluent.Options
 
-do
-	Tabs.Main:AddParagraph({
-		Title = "Paragraph",
-		Content = "This is a paragraph.\nSecond line!",
-	})
-
-	Tabs.Main:AddButton({
-		Title = "Button",
-		Description = "Very important button",
-		Callback = function()
-			Window:Dialog({
-				Title = "Title",
-				Content = "This is a dialog",
-				Buttons = {
-					{
-						Title = "Confirm",
-						Callback = function()
-							print("Confirmed the dialog.")
-						end,
-					},
-					{
-						Title = "Cancel",
-						Callback = function()
-							print("Cancelled the dialog.")
-						end,
-					},
-				},
-			})
-		end,
-	})
-
-	local Toggle = Tabs.Main:AddToggle("MyToggle", { Title = "Toggle", Default = false })
-
-	Toggle:OnChanged(function()
-		print("Toggle changed:", Options.MyToggle.Value)
-	end)
-
-	Options.MyToggle:SetValue(false)
-
-	local Slider = Tabs.Main:AddSlider("Slider", {
-		Title = "Slider",
-		Description = "This is a slider",
-		Default = 2,
-		Min = 0,
-		Max = 5,
-		Rounding = 1,
-		Callback = function(Value)
-			print("Slider was changed:", Value)
-		end,
-	})
-
-	Slider:OnChanged(function(Value)
-		print("Slider changed:", Value)
-	end)
-
-	Slider:SetValue(3)
-
-	local Dropdown = Tabs.Main:AddDropdown("Dropdown", {
-		Title = "Dropdown",
-		Values = {
-			"one",
-			"two",
-			"three",
-			"four",
-			"five",
-			"six",
-			"seven",
-			"eight",
-			"nine",
-			"ten",
-			"eleven",
-			"twelve",
-			"thirteen",
-			"fourteen",
-		},
-		Multi = false,
-		Default = 1,
-	})
-
-	Dropdown:SetValue("four")
-
-	Dropdown:OnChanged(function(Value)
-		print("Dropdown changed:", Value)
-	end)
-
-	local MultiDropdown = Tabs.Main:AddDropdown("MultiDropdown", {
-		Title = "Dropdown",
-		Description = "You can select multiple values.",
-		Values = {
-			"one",
-			"two",
-			"three",
-			"four",
-			"five",
-			"six",
-			"seven",
-			"eight",
-			"nine",
-			"ten",
-			"eleven",
-			"twelve",
-			"thirteen",
-			"fourteen",
-		},
-		Multi = true,
-		Default = { "seven", "twelve" },
-	})
-
-	MultiDropdown:SetValue({
-		three = true,
-		five = true,
-		seven = false,
-	})
-
-	MultiDropdown:OnChanged(function(Value)
-		local Values = {}
-		for Value, State in next, Value do
-			table.insert(Values, Value)
-		end
-		print("Mutlidropdown changed:", table.concat(Values, ", "))
-	end)
-
-	local Colorpicker = Tabs.Main:AddColorpicker("Colorpicker", {
-		Title = "Colorpicker",
-		Default = Color3.fromRGB(96, 205, 255),
-	})
-
-	Colorpicker:OnChanged(function()
-		print("Colorpicker changed:", Colorpicker.Value)
-	end)
-
-	Colorpicker:SetValueRGB(Color3.fromRGB(0, 255, 140))
-
-	local TColorpicker = Tabs.Main:AddColorpicker("TransparencyColorpicker", {
-		Title = "Colorpicker",
-		Description = "but you can change the transparency.",
-		Transparency = 0,
-		Default = Color3.fromRGB(96, 205, 255),
-	})
-
-	TColorpicker:OnChanged(function()
-		print("TColorpicker changed:", TColorpicker.Value, "Transparency:", TColorpicker.Transparency)
-	end)
-
-	local Keybind = Tabs.Main:AddKeybind("Keybind", {
-		Title = "KeyBind",
-		Mode = "Toggle", -- Always, Toggle, Hold
-		Default = "LeftControl", -- String as the name of the keybind (MB1, MB2 for mouse buttons)
-
-		-- Occurs when the keybind is clicked, Value is `true`/`false`
-		Callback = function(Value)
-			print("Keybind clicked!", Value)
-		end,
-
-		-- Occurs when the keybind itself is changed, `New` is a KeyCode Enum OR a UserInputType Enum
-		ChangedCallback = function(New)
-			print("Keybind changed!", New)
-		end,
-	})
-
-	-- OnClick is only fired when you press the keybind and the mode is Toggle
-	-- Otherwise, you will have to use Keybind:GetState()
-	Keybind:OnClick(function()
-		print("Keybind clicked:", Keybind:GetState())
-	end)
-
-	Keybind:OnChanged(function()
-		print("Keybind changed:", Keybind.Value)
-	end)
-
-	task.spawn(function()
-		while true do
-			wait(1)
-
-			-- example for checking if a keybind is being pressed
-			local state = Keybind:GetState()
-			if state then
-				print("Keybind is being held down")
-			end
-
-			if Fluent.Unloaded then
-				break
-			end
-		end
-	end)
-
-	Keybind:SetValue("MB2", "Toggle") -- Sets keybind to MB2, mode to Hold
-
-	local Input = Tabs.Main:AddInput("Input", {
-		Title = "Input",
-		Default = "Default",
-		Placeholder = "Placeholder",
-		Numeric = false, -- Only allows numbers
-		Finished = false, -- Only calls callback when you press enter
-		Callback = function(Value)
-			print("Input changed:", Value)
-		end,
-	})
-
-	Input:OnChanged(function()
-		print("Input updated:", Input.Value)
-	end)
-end
-
 -- Auto Tab Content - Build A Zoo Egg Buyer Integration
 do
-
 	-- Egg buyer state
 	local eggBuyerState = {
 		isRunning = false,
@@ -311,11 +112,6 @@ do
 
 	-- Helper function to get player's assigned island name
 	local function getPlayerIslandName()
-		local LocalPlayer = getLocalPlayer()
-		if not LocalPlayer then
-			return nil
-		end
-
 		-- Wait for assigned island if not set yet (matching decompiled game code)
 		local assignedIsland = LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
 		if not assignedIsland then
@@ -837,8 +633,6 @@ end
 
 -- Lottery Tab Content
 do
-	local LocalPlayer = getLocalPlayer()
-
 	-- Define available codes
 	local lotteryCodes = {
 		"N7A68Q82H83",
@@ -858,7 +652,6 @@ do
 
 	-- Function to get current lottery ticket count
 	local function getLotteryTicketCount()
-		local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 		local Data = PlayerGui:FindFirstChild("Data")
 		if Data then
 			local Asset = Data:FindFirstChild("Asset")
@@ -871,7 +664,6 @@ do
 
 	-- Function to check if code is already redeemed
 	local function isCodeRedeemed(code)
-		local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 		local Data = PlayerGui:FindFirstChild("Data")
 		if Data then
 			local UserFlag = Data:FindFirstChild("UserFlag")
@@ -1056,24 +848,6 @@ do
 
 	-- Setup FoodStore attribute listener
 	local function setupFoodStoreListener()
-		local LocalPlayer = getLocalPlayer()
-
-		if not LocalPlayer then
-			warn("⚠️ LocalPlayer not found, waiting...")
-			task.wait(1)
-			LocalPlayer = getLocalPlayer()
-			if not LocalPlayer then
-				warn("❌ Could not get LocalPlayer for FoodStore listener")
-				return
-			end
-		end
-
-		local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
-		if not PlayerGui then
-			warn("❌ PlayerGui not found")
-			return
-		end
-
 		local Data = PlayerGui:WaitForChild("Data", 10)
 		if not Data then
 			warn("❌ Data folder not found")
@@ -1440,8 +1214,6 @@ do
 	local type = type
 	local table = table
 
-	local LocalPlayer = getLocalPlayer()
-
 	-- Auto Trade State
 	local autoTradeState = {
 		enabled = false,
@@ -1648,8 +1420,8 @@ do
 			print("📨 [Auto Trade] Trade offer received")
 
 			if not dependenciesLoaded then
-			print("⚠️ [Auto Trade] Ignoring - dependencies not ready")
-			return
+				print("⚠️ [Auto Trade] Ignoring - dependencies not ready")
+				return
 			end
 
 			local data = tradeData.data
@@ -2018,7 +1790,8 @@ do
 			autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
 
 			-- Send webhook notification
-			local acceptanceReason = acceptByValue and "Pet Value Only" or (acceptByFairness and "Fairness Only" or "Either")
+			local acceptanceReason = acceptByValue and "Pet Value Only"
+				or (acceptByFairness and "Fairness Only" or "Either")
 			local webhookMsg = "✅ **Trade Accepted** (" .. acceptanceReason .. ")\n\n"
 			webhookMsg = webhookMsg
 				.. "**Your Pet:**\n- Type: "
@@ -2230,14 +2003,6 @@ do
 	})
 
 	local function teleportToTradeZone(zoneNumber)
-		local LocalPlayer = getLocalPlayer()
-
-		if not LocalPlayer or not LocalPlayer.Character then
-			print("⚠️ [Teleport] Character not found")
-			return false
-		end
-
-		-- Get player's assigned island
 		local assignedIsland = LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
 		if not assignedIsland then
 			print("⚠️ [Teleport] AssignedIslandName not found")
@@ -2246,59 +2011,24 @@ do
 
 		print("🔍 [Teleport] Assigned Island: " .. assignedIsland)
 
-		-- Navigate to trade zone: Workspace > Art > Assigned_Island > ENV > TradeZone > Zone > TradeZone5 > TradePart
-		local art = Workspace:FindFirstChild("Art")
-		if not art then
-			print("⚠️ [Teleport] Art folder not found")
-			return false
-		end
+		-- Navigate to TradePart using helper
+		local path = { CONSTANTS.ART_FOLDER, assignedIsland, CONSTANTS.ENV_FOLDER, CONSTANTS.TRADE_ZONE_FOLDER, CONSTANTS.ZONE_FOLDER, "TradeZone" .. zoneNumber, "TradePart" }
+		local tradePart = navigatePath(Workspace, path)
 
-		local island = art:FindFirstChild(assignedIsland)
-		if not island then
-			print("⚠️ [Teleport] Island not found: " .. assignedIsland)
-			return false
-		end
-
-		local env = island:FindFirstChild("ENV")
-		if not env then
-			print("⚠️ [Teleport] ENV not found")
-			return false
-		end
-
-		local tradeZoneFolder = env:FindFirstChild("TradeZone")
-		if not tradeZoneFolder then
-			print("⚠️ [Teleport] TradeZone folder not found")
-			return false
-		end
-
-		local zone = tradeZoneFolder:FindFirstChild("Zone")
-		if not zone then
-			print("⚠️ [Teleport] Zone not found")
-			return false
-		end
-
-		local tradeZonePart = zone:FindFirstChild("TradeZone" .. zoneNumber)
-		if not tradeZonePart then
-			print("⚠️ [Teleport] TradeZone" .. zoneNumber .. " not found")
-			return false
-		end
-
-		local tradePart = tradeZonePart:FindFirstChild("TradePart")
 		if not tradePart then
-			print("⚠️ [Teleport] TradePart not found")
+			print("⚠️ [Teleport] TradePart not found for zone " .. zoneNumber)
 			return false
 		end
 
-		-- Get CFrame position
+		-- Get CFrame and teleport
 		local targetCFrame = tradePart.CFrame
 		if not targetCFrame then
 			print("⚠️ [Teleport] Could not get CFrame from TradePart")
 			return false
 		end
 
-		-- Teleport player
 		local char = LocalPlayer.Character
-		local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+		local humanoidRootPart = char and char:FindFirstChild("HumanoidRootPart")
 
 		if humanoidRootPart then
 			humanoidRootPart.CFrame = targetCFrame
@@ -2528,7 +2258,6 @@ do
 			if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
 				if dependenciesLoaded and TradeRE then
 					-- Check if Kitsune counter is at 1000/1000
-					local LocalPlayer = getLocalPlayer()
 					local assignedIsland = LocalPlayer and LocalPlayer:GetAttribute(CONSTANTS.ASSIGNED_ISLAND_NAME)
 
 					if assignedIsland then
@@ -2658,25 +2387,7 @@ do
 		Title = "Calculate Eggs",
 		Description = "Count eggs in inventory and send to webhook",
 		Callback = function()
-			local localPlayer = getLocalPlayer()
-
-			if not localPlayer then
-				Fluent:Notify({
-					Title = "Error",
-					Content = "LocalPlayer not found",
-					Duration = 3,
-				})
-				return
-			end
-
-			local eggData = localPlayer:FindFirstChild("PlayerGui")
-			if eggData then
-				eggData = eggData:FindFirstChild("Data")
-			end
-			if eggData then
-				eggData = eggData:FindFirstChild("Egg")
-			end
-
+			local eggData = PlayerGui.Data.Egg
 			if not eggData then
 				Fluent:Notify({
 					Title = "Error",
