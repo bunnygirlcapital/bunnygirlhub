@@ -830,7 +830,10 @@ do
 		table.insert(fields, differenceField)
 
 		local embed = {
-			author = EmbedSettings.Author,
+			author = {
+				name = EmbedSettings.Author.Name,
+				icon_url = EmbedSettings.Author.Icon,
+			},
 			description = string.format("**Trade Accepted** (%s)", acceptanceType),
 			fields = fields,
 			color = EmbedSettings.Color,
@@ -1532,7 +1535,10 @@ do
 		local data = {
 			embeds = {
 				{
-					author = EmbedSettings.Author,
+					author = {
+						name = EmbedSettings.Author.Name,
+						icon_url = EmbedSettings.Author.Icon,
+					},
 					description = content,
 					color = EmbedSettings.Color,
 					timestamp = DateTime.now():ToIsoDate(),
