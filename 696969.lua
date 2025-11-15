@@ -56,12 +56,24 @@ local TradeRE = Remote.TradeRE
 local RedemptionCodeRE = Remote.RedemptionCodeRE
 local LotteryRE = Remote.LotteryRE
 
+--// Mutations
+local mutationValues = { "Golden", "Diamond", "Fire", "Electric", "Dino", "Snow", "Halloween" } -- All available mutations
+
+local function getMutationIndex(mutation)
+	for i, m in ipairs(mutationValues) do
+		if m:lower() == mutation:lower() then
+			return i
+		end
+	end
+	return 0
+end
+
 --// Embed setting
 local EmbedSettings = {
 	Color = 8388736, -- Purple (#800080)
 	Author = {
 		Name = LocalPlayer.Name,
-		Icon = "https://i.pinimg.com/1200x/27/3f/ad/273fad14a53fc4ed02e203b6d450d7a6.jpg",
+		Icon = "https://i.pinimg.com/1200x/37/6f/7b/376f7b3b727c3848842a864693b697bb.jpg",
 	},
 }
 
@@ -131,8 +143,6 @@ do
 			lastScanTime = 0,
 		},
 	}
-
-	local mutationValues = { "Golden", "Diamond", "Fire", "Electric", "Dino", "Snow", "Halloween" } -- All available mutations
 
 	local Section = Tabs.Eggs:AddSection("Auto Buy Egg")
 
@@ -1034,8 +1044,13 @@ do
 					local traderType = tostring(pet.T):lower()
 					local traderMutation = tostring(pet.M):lower()
 					local traderV = tonumber(pet.V) or 0
+					local traderPetValue = getPetValue(pet)
 
-					if traderType == playerType and traderMutation == playerMutation and traderV >= playerV then
+					if
+						traderType == playerType
+						and getMutationIndex(traderMutation) >= getMutationIndex(playerMutation)
+						and traderPetValue >= playerValue
+					then
 						hasSamePet = true
 						matchingPetUID = pet.UID
 						break
@@ -1043,7 +1058,7 @@ do
 				end
 
 				-- If same pet found, check if total trader value is more than player value
-				if hasSamePet and traderValue > playerValue then
+				if hasSamePet and traderValue >= playerValue then
 					print(
 						"✅ [Auto Trade] Auto-accepting - trader offers "
 							.. playerPet.T
