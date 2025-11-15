@@ -132,7 +132,7 @@ do
 		},
 	}
 
-	local mutationValues = { "Golden", "Diamond", "Fire", "Electric", "Dino", "Snow", "Halloween" }
+	local mutationValues = { "Golden", "Diamond", "Fire", "Electric", "Dino", "Snow", "Halloween" } -- All available mutations
 
 	local Section = Tabs.Eggs:AddSection("Auto Buy Egg")
 
