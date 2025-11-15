@@ -37,9 +37,6 @@ local FoodStore = Data.FoodStore
 local Remote = ReplicatedStorage.Remote
 
 local Config = ReplicatedStorage.Config
-local Shared = ReplicatedStorage.Shared
-local Pet = Shared:FindFirstChild("Pet")
-local Format = Shared:FindFirstChild("Format")
 local ResMutate = Config.ResMutate
 
 -- Load required modules
@@ -1808,4 +1805,6 @@ local function setupAutoSave()
 	end)
 end
 
--- Star
+-- Start auto-save setup
+-- Config is already loaded above, this section just handles auto-saving on changes
+task.spawn(setupAutoSave)
