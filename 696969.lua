@@ -42,6 +42,16 @@ local Pet = Shared:FindFirstChild("Pet")
 local Format = Shared:FindFirstChild("Format")
 local ResMutate = Config.ResMutate
 
+-- Load required modules
+Shared = require(ReplicatedStorage:WaitForChild("Shared", 10))
+print("✅ [Shared] Loaded")
+
+Pet = Shared("Pet")
+print("✅ [Pet] Loaded")
+
+Format = Shared("Format")
+print("✅ [Format] Loaded")
+
 --// Remotes
 local CharacterRE = Remote.CharacterRE
 local TradeZoneRE = Remote.TradeZoneRE
@@ -1798,6 +1808,4 @@ local function setupAutoSave()
 	end)
 end
 
--- Start auto-save setup
--- Config is already loaded above, this section just handles auto-saving on changes
-task.spawn(setupAutoSave)
+-- Star
