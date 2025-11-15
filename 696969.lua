@@ -665,10 +665,12 @@ do
 		Callback = function()
 			local redeemed = 0
 			local skipped = 0
+			local attempted = {}
 			for _, code in ipairs(lotteryCodes) do
 				if not isCodeRedeemed(code) then
 					pcall(function()
 						redeemCode(code)
+						table.insert(attempted, code)
 						redeemed = redeemed + 1
 						task.wait(0.1)
 					end)
@@ -676,11 +678,24 @@ do
 					skipped = skipped + 1
 				end
 			end
+			-- Wait a bit for attributes to update
+			task.wait(1)
+			local invalid = {}
+			for _, code in ipairs(attempted) do
+				if not isCodeRedeemed(code) then
+					table.insert(invalid, code)
+				end
+			end
+			local invalidStr = #invalid > 0 and "Invalid codes: " .. table.concat(invalid, ", ") or "All codes redeemed successfully"
 			Fluent:Notify({
 				Title = "Codes Redeemed",
-				Content = string.format("Redeemed %d codes, skipped %d already redeemed", redeemed, skipped),
-				Duration = 5,
+				Content = string.format("Redeemed %d codes, skipped %d already redeemed\n%s", redeemed, skipped, invalidStr),
+				Duration = 10,
 			})
+			print("✅ [Lottery] Redeemed: " .. redeemed .. ", Skipped: " .. skipped)
+			if #invalid > 0 then
+				print("❌ [Lottery] Invalid codes: " .. table.concat(invalid, ", "))
+			end
 		end,
 	})
 
