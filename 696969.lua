@@ -132,7 +132,17 @@ do
 		},
 	}
 
+	local mutationValues = { "Golden", "Diamond", "Fire", "Electric", "Dino", "Snow", "Halloween" }
+
 	local Section = Tabs.Eggs:AddSection("Auto Buy Egg")
+
+	-- Select Mutations: multi dropdown
+	local SelectMutations = Section:AddDropdown("SelectMutations", {
+		Title = "Select Mutations",
+		Values = mutationValues,
+		Multi = true,
+		Default = { "Dino", "Snow", "Halloween" },
+	})
 
 	-- Select Eggs: multi dropdown
 	local SelectEggs = Section:AddDropdown("SelectEggs", {
@@ -150,14 +160,6 @@ do
 		},
 		Multi = true,
 		Default = { "GeneralKongEgg", "GodzillaEgg" },
-	})
-
-	-- Select Mutations: multi dropdown
-	local SelectMutations = Section:AddDropdown("SelectMutations", {
-		Title = "Select Mutations",
-		Values = { "Golden", "Diamond", "Fire", "Electric", "Dino", "Snow", "Halloween" },
-		Multi = true,
-		Default = { "Dino", "Snow", "Halloween" },
 	})
 
 	-- Auto Buy Egg: toggle
