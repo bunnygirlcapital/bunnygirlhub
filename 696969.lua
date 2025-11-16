@@ -1073,7 +1073,7 @@ do
 				end
 
 				-- If same pet found, check if total trader value is more than player value
-				if hasSamePet and traderValue >= playerValue then
+				if hasSamePet and traderValue > playerValue then
 					print(
 						"✅ [Auto Trade] Auto-accepting - trader offers "
 							.. playerPet.T
