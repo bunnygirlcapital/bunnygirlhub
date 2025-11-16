@@ -41,13 +41,10 @@ local ResMutate = Config.ResMutate
 
 -- Load required modules
 Shared = require(ReplicatedStorage:WaitForChild("Shared", 10))
-print("✅ [Shared] Loaded")
 
 Pet = Shared("Pet")
-print("✅ [Pet] Loaded")
 
 Format = Shared("Format")
-print("✅ [Format] Loaded")
 
 --// Remotes
 local CharacterRE = Remote.CharacterRE
@@ -87,6 +84,112 @@ local Window = Fluent:CreateWindow({
 	Theme = "Dark",
 	MinimizeKey = Enum.KeyCode.LeftControl, -- Used when theres no MinimizeKeybind
 })
+
+--// Draggable Minimized Icon
+do
+	local iconGui = Instance.new("ScreenGui")
+	iconGui.Name = "BunnyGirlHubIcon"
+	iconGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	iconGui.ResetOnSpawn = false
+	iconGui.Enabled = true -- Make sure it's enabled
+	iconGui.Parent = PlayerGui
+
+	print("✅ [Icon] ScreenGui created and parented to PlayerGui")
+
+	local iconFrame = Instance.new("ImageButton")
+	iconFrame.Name = "Icon"
+	iconFrame.Size = UDim2.new(0, 50, 0, 50)
+	iconFrame.Position = UDim2.new(0, 20, 0, 20)
+	iconFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+	iconFrame.BackgroundTransparency = 0.2
+	iconFrame.BorderSizePixel = 0
+	iconFrame.Parent = iconGui
+	iconFrame.Visible = false -- Hidden by default, shown when minimized
+	iconFrame.ZIndex = 1
+
+	local iconCorner = Instance.new("UICorner")
+	iconCorner.CornerRadius = UDim.new(0, 8)
+	iconCorner.Parent = iconFrame
+
+	-- Use ImageLabel inside ImageButton for better image display
+	local iconImage = Instance.new("ImageLabel")
+	iconImage.Name = "IconImage"
+	iconImage.Size = UDim2.new(1, 0, 1, 0) -- Fill entire button
+	iconImage.Position = UDim2.new(0, 0, 0, 0)
+	iconImage.BackgroundTransparency = 1
+	iconImage.BorderSizePixel = 0
+	iconImage.Image = "rbxassetid://7072717759"
+	iconImage.ImageTransparency = 0
+	iconImage.ZIndex = 2
+	iconImage.Visible = true -- Ensure it's visible
+	iconImage.Parent = iconFrame
+
+	-- Make icon draggable
+	local dragging = false
+	local dragStartPos = nil
+	local frameStartPos = nil
+
+	iconFrame.InputBegan:Connect(function(input)
+		if Fluent.Unloaded then
+			return
+		end
+		if
+			input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
+			dragging = true
+			dragStartPos = Vector2.new(input.Position.X, input.Position.Y)
+			frameStartPos = iconFrame.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if Fluent.Unloaded then
+			return
+		end
+		if
+			dragging
+			and (
+				input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
+			)
+		then
+			local delta = Vector2.new(input.Position.X, input.Position.Y) - dragStartPos
+			iconFrame.Position = UDim2.new(
+				frameStartPos.X.Scale,
+				frameStartPos.X.Offset + delta.X,
+				frameStartPos.Y.Scale,
+				frameStartPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+
+	-- Click to restore window
+	iconFrame.MouseButton1Click:Connect(function()
+		if Fluent.Unloaded then
+			return
+		end
+		if Window and Window.Minimized then
+			Window:Minimize()
+		end
+	end)
+
+	-- Monitor window minimized state and update icon visibility
+	task.spawn(function()
+		while not Fluent.Unloaded do
+			task.wait(0.1)
+			if Window then
+				iconFrame.Visible = Window.Minimized
+			end
+		end
+		iconGui:Destroy()
+	end)
+end
 
 --// Check if the script is already running
 -- if _G.BuildAZoo then
@@ -686,15 +789,21 @@ do
 					table.insert(invalid, code)
 				end
 			end
-			local invalidStr = #invalid > 0 and "Invalid codes: " .. table.concat(invalid, ", ") or "All codes redeemed successfully"
+			local invalidStr = #invalid > 0 and "Invalid codes: " .. table.concat(invalid, ", ")
+				or "All codes redeemed successfully"
 			Fluent:Notify({
 				Title = "Codes Redeemed",
-				Content = string.format("Redeemed %d codes, skipped %d already redeemed\n%s", redeemed, skipped, invalidStr),
+				Content = string.format(
+					"Redeemed %d codes, skipped %d already redeemed\n%s",
+					redeemed,
+					skipped,
+					invalidStr
+				),
 				Duration = 10,
 			})
-			print("✅ [Lottery] Redeemed: " .. redeemed .. ", Skipped: " .. skipped)
+			-- print("✅ [Lottery] Redeemed: " .. redeemed .. ", Skipped: " .. skipped)
 			if #invalid > 0 then
-				print("❌ [Lottery] Invalid codes: " .. table.concat(invalid, ", "))
+				-- print("❌ [Lottery] Invalid codes: " .. table.concat(invalid, ", "))
 			end
 		end,
 	})
@@ -889,12 +998,6 @@ do
 				Body = jsonData,
 			})
 		end)
-
-		if success then
-			print("✅ [Webhook] Notification sent")
-		else
-			print("❌ [Webhook] Failed to send: " .. tostring(err))
-		end
 	end
 
 	-- Helper function to get key-value pairs as strings
