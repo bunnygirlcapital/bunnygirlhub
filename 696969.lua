@@ -41,9 +41,7 @@ local ResMutate = Config.ResMutate
 
 -- Load required modules
 Shared = require(ReplicatedStorage:WaitForChild("Shared", 10))
-
 Pet = Shared("Pet")
-
 Format = Shared("Format")
 
 --// Remotes
@@ -64,6 +62,22 @@ local function getMutationIndex(mutation)
 	end
 	return 0
 end
+
+--// Lottery codes
+local lotteryCodes = {
+	"N7A68Q82H83",
+	"4XW5RG4CHRY",
+	"DelayGift",
+	"60KCCU919",
+	"FIXERROR819",
+	"3XKK8Z2WB6G",
+	"Halloween1018",
+	"subtoZRGZeRoGhost",
+	"NA5Y874BAGG",
+	"Nyaa",
+	"ADQZP3MBW6N",
+	"ZTWPH3WW8SJ",
+}
 
 --// Embed setting
 local EmbedSettings = {
@@ -100,29 +114,33 @@ do
 	iconFrame.Name = "Icon"
 	iconFrame.Size = UDim2.new(0, 50, 0, 50)
 	iconFrame.Position = UDim2.new(0, 20, 0, 20)
-	iconFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-	iconFrame.BackgroundTransparency = 0.2
+	iconFrame.BackgroundColor3 = Color3.fromRGB(128, 0, 128) -- Purple (#800080), same as embed color
+	iconFrame.BackgroundTransparency = 0
 	iconFrame.BorderSizePixel = 0
 	iconFrame.Parent = iconGui
 	iconFrame.Visible = false -- Hidden by default, shown when minimized
-	iconFrame.ZIndex = 1
+	iconFrame.ZIndex = -1
 
 	local iconCorner = Instance.new("UICorner")
-	iconCorner.CornerRadius = UDim.new(0, 8)
+	iconCorner.CornerRadius = UDim.new(0, 12)
 	iconCorner.Parent = iconFrame
 
 	-- Use ImageLabel inside ImageButton for better image display
 	local iconImage = Instance.new("ImageLabel")
 	iconImage.Name = "IconImage"
-	iconImage.Size = UDim2.new(1, 0, 1, 0) -- Fill entire button
-	iconImage.Position = UDim2.new(0, 0, 0, 0)
+	iconImage.Size = UDim2.new(1, -6, 1, -6)
+	iconImage.Position = UDim2.new(0, 3, 0, 3)
 	iconImage.BackgroundTransparency = 1
 	iconImage.BorderSizePixel = 0
-	iconImage.Image = "rbxassetid://7072717759"
+	iconImage.Image = "rbxassetid://82292792267705"
 	iconImage.ImageTransparency = 0
-	iconImage.ZIndex = 2
-	iconImage.Visible = true -- Ensure it's visible
+	iconImage.ZIndex = 1
+	iconImage.Visible = true
 	iconImage.Parent = iconFrame
+
+	local imageCorner = Instance.new("UICorner")
+	imageCorner.CornerRadius = UDim.new(0, 8)
+	imageCorner.Parent = iconImage
 
 	-- Make icon draggable
 	local dragging = false
@@ -709,24 +727,6 @@ end
 
 --// TAB: Lottery
 do
-	-- Define available codes
-	local lotteryCodes = {
-		"N7A68Q82H83",
-		"4XW5RG4CHRY",
-		"DelayGift",
-		"60KCCU919",
-		"FIXERROR819",
-		"3XKK8Z2WB6G",
-		"Halloween1018",
-		"subtoZRGZeRoGhost",
-		"NA5Y874BAGG",
-		"Nyaa",
-		"DS5523YSQ3C",
-		"ADQZP3MBW6N",
-		"ZTWPH3WW8SJ",
-		"N5HZKRRT2DF",
-	}
-
 	-- Function to get current lottery ticket count
 	local function getLotteryTicketCount()
 		return Data.Asset:GetAttribute("LotteryTicket")
