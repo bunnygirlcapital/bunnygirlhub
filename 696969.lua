@@ -78,6 +78,7 @@ local lotteryCodes = {
 	"Nyaa",
 	"ADQZP3MBW6N",
 	"ZTWPH3WW8SJ",
+	"9HDARHCQMWS",
 }
 
 --// Embed setting
@@ -278,10 +279,6 @@ do
 	local SelectEggs = Section:AddDropdown("SelectEggs", {
 		Title = "Select Eggs",
 		Values = {
-			"BoneDragonEgg",
-			"UltraEgg",
-			"UnicornProEgg",
-			"SaberCubEgg",
 			"GeneralKongEgg",
 			"GodzillaEgg",
 			"MetroGiraffeEgg",
