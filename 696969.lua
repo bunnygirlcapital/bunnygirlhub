@@ -287,6 +287,7 @@ do
 			"MetroGiraffeEgg",
 			"BiteForceSharkEgg",
 			"GreenStormEgg",
+			"DrakespineEgg",
 		},
 		Multi = true,
 		Default = { "GeneralKongEgg", "GodzillaEgg" },
@@ -934,18 +935,6 @@ do
 		return Format:Number2String(num, "en")
 	end
 
-	-- Helper function to get table keys as strings
-	local function getKeys(tbl)
-		if not tbl or type(tbl) ~= "table" then
-			return { "not a table" }
-		end
-		local keys = {}
-		for k, v in pairs(tbl) do
-			table.insert(keys, tostring(k))
-		end
-		return keys
-	end
-
 	-- Global webhook function for trade notifications
 	local function sendTradeWebhook(heldPet, traderPets, acceptanceType, playerValue, traderValue, fairnessRatio)
 		if not Options.WebhookEnabled.Value then
@@ -1028,35 +1017,6 @@ do
 				Body = jsonData,
 			})
 		end)
-	end
-
-	-- Helper function to get key-value pairs as strings
-	local function getKeyValues(tbl)
-		if not tbl or type(tbl) ~= "table" then
-			return { "not a table" }
-		end
-		local keyValuePairs = {}
-		local success, err = pcall(function()
-			for k, v in pairs(tbl) do
-				local keyStr = tostring(k)
-				local valStr
-				local valSuccess, valErr = pcall(function()
-					if type(v) == "table" then
-						valStr = "[table]"
-					else
-						valStr = tostring(v)
-					end
-				end)
-				if not valSuccess then
-					valStr = "[error converting value]"
-				end
-				table.insert(keyValuePairs, keyStr .. ": " .. valStr)
-			end
-		end)
-		if not success then
-			return { "error iterating table: " .. tostring(err) }
-		end
-		return keyValuePairs
 	end
 
 	-- Trade Decision Logic
