@@ -38,6 +38,8 @@ local Remote = ReplicatedStorage.Remote
 
 local Config = ReplicatedStorage.Config
 local ResPet = require(Config.ResPet)
+local ResPetFood = require(Config.ResPetFood)
+local ResMutate = require(Config.ResMutate)
 local ResMutate = Config.ResMutate
 
 -- Load required modules
@@ -79,6 +81,7 @@ local lotteryCodes = {
 	"ADQZP3MBW6N",
 	"ZTWPH3WW8SJ",
 	"9HDARHCQMWS",
+	"A38JBJ3TSSE",
 }
 
 --// Embed setting
