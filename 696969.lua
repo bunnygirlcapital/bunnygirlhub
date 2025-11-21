@@ -1613,60 +1613,115 @@ do
 		end,
 	})
 
-	Tabs.Pets:AddButton({
-		Title = "Find lowest",
-		Description = "Find and teleport to your pet with the lowest ProduceSpeed",
-		Callback = function()
-			if Fluent.Unloaded then
-				return
-			end
+	-- Helper function to find lowest pet by category
+	local function findLowestPetByCategory(isOcean)
+		if Fluent.Unloaded then
+			return
+		end
 
-			local char = LocalPlayer.Character
-			local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+		local char = LocalPlayer.Character
+		if not char then
+			return
+		end
 
-			local petObjects = getMyPets()
-			local petsWithSpeed = {}
+		local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+		if not humanoidRootPart then
+			return
+		end
 
-			for _, petObject in ipairs(petObjects) do
-				local produceSpeed = petObject:GetAttribute("ProduceSpeed")
-				if produceSpeed then
+		local petObjects = getMyPets()
+		local petsWithSpeed = {}
+
+		for _, petObject in ipairs(petObjects) do
+			local produceSpeed = petObject:GetAttribute("ProduceSpeed")
+			local petType = petObject:GetAttribute("Type")
+
+			if produceSpeed and petType then
+				-- Look up category from ResPet
+				local petDef = ResPet[petType]
+				local category = petDef and petDef.Category or ""
+
+				-- Filter by category
+				local matchesCategory = false
+				if isOcean then
+					matchesCategory = (category == "Ocean")
+				else
+					matchesCategory = (category ~= "Ocean")
+				end
+
+				if matchesCategory then
 					table.insert(petsWithSpeed, {
 						object = petObject,
 						speed = produceSpeed,
 					})
 				end
 			end
+		end
 
-			if #petsWithSpeed == 0 then
-				return
-			end
+		if #petsWithSpeed == 0 then
+			local categoryName = isOcean and "Ocean" or "Land"
+			Fluent:Notify({
+				Title = "No Pets Found",
+				Content = string.format("No %s pets with ProduceSpeed found", categoryName),
+				Duration = 3,
+			})
+			return
+		end
 
-			-- Sort by ProduceSpeed (lowest first)
-			table.sort(petsWithSpeed, function(a, b)
-				return a.speed < b.speed
-			end)
+		-- Sort by ProduceSpeed (lowest first)
+		table.sort(petsWithSpeed, function(a, b)
+			return a.speed < b.speed
+		end)
 
-			-- Get the lowest ProduceSpeed pet
-			local lowestPet = petsWithSpeed[1]
-			local petObject = lowestPet.object
-			local produceSpeed = lowestPet.speed
+		-- Get the lowest ProduceSpeed pet
+		local lowestPet = petsWithSpeed[1]
+		local petObject = lowestPet.object
+		local produceSpeed = lowestPet.speed
 
-			-- Get pet name from Type attribute
-			local petType = petObject:GetAttribute("Type")
-			local petName = petType or petObject.Name
+		-- Get pet name from Type attribute
+		local petType = petObject:GetAttribute("Type")
+		local petName = petType or petObject.Name
 
-			local targetCFrame = getPetCFrame(petObject)
-			if targetCFrame then
-				-- Teleport to pet
-				humanoidRootPart.CFrame = targetCFrame
+		-- Get Mutate and Mutate2 attributes
+		local mutate = petObject:GetAttribute("Mutate")
+		local mutate2 = petObject:GetAttribute("Mutate2")
+		local mutateStr = mutate and tostring(mutate) or "None"
+		local mutate2Str = mutate2 and tostring(mutate2) or "None"
 
-				-- Send notification
-				Fluent:Notify({
-					Title = "Pet Found",
-					Content = string.format("Pet: %s\nValue: %s", petName, tostring(produceSpeed)),
-					Duration = 5,
-				})
-			end
+		local targetCFrame = getPetCFrame(petObject)
+		if targetCFrame then
+			-- Teleport to pet
+			humanoidRootPart.CFrame = targetCFrame
+
+			-- Send notification
+			local categoryName = isOcean and "Ocean" or "Land"
+			Fluent:Notify({
+				Title = string.format("%s Pet Found", categoryName),
+				Content = string.format(
+					"Pet: %s\nValue: %s\nMutate: %s\nMutate2: %s",
+					petName,
+					tostring(produceSpeed),
+					mutateStr,
+					mutate2Str
+				),
+				Duration = 5,
+			})
+		end
+	end
+
+	Tabs.Pets:AddButton({
+		Title = "Find Lowest Ocean Pet",
+		Description = "Find and teleport to your ocean pet with the lowest ProduceSpeed",
+		Callback = function()
+			findLowestPetByCategory(true)
+		end,
+	})
+
+	Tabs.Pets:AddButton({
+		Title = "Find Lowest Land Pet",
+		Description = "Find and teleport to your land pet with the lowest ProduceSpeed",
+		Callback = function()
+			findLowestPetByCategory(false)
 		end,
 	})
 end
