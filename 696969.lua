@@ -31,6 +31,7 @@ local JobId = game.JobId
 --// Folders
 local AssignedIslandName = LocalPlayer:GetAttribute("AssignedIslandName")
 local Eggs = ReplicatedStorage.Eggs
+local Pets = Workspace.Pets
 local Art = Workspace.Art
 local Data = PlayerGui.Data
 local FoodStore = Data.FoodStore
@@ -225,6 +226,7 @@ local Tabs = {
 	Food = Window:AddTab({ Title = "Food", Icon = "utensils" }),
 	Lottery = Window:AddTab({ Title = "Lottery", Icon = "ticket" }),
 	Trade = Window:AddTab({ Title = "Trade", Icon = "repeat" }),
+	Pets = Window:AddTab({ Title = "Pets", Icon = "heart" }),
 	Webhook = Window:AddTab({ Title = "Webhook", Icon = "send" }),
 	Settings = Window:AddTab({ Title = "Settings", Icon = "settings" }),
 }
@@ -1534,6 +1536,139 @@ do
 			end
 		end
 	end)
+end
+
+--// TAB: Pets
+do
+	local PetsSection = Tabs.Pets:AddSection("Pet Collection")
+
+	-- Helper function to get user's pets from Workspace.Pets
+	local function getMyPets()
+		local userId = LocalPlayer.CharacterAppearanceId
+
+		local myPets = {}
+		for _, petObject in pairs(Pets:GetChildren()) do
+			-- Filter by UserId attribute matching CharacterAppearanceId
+			local petUserId = petObject:GetAttribute("UserId")
+			-- Exclude pets with BigPetType attribute
+			local bigPetType = petObject:GetAttribute("BigPetType")
+			if petUserId == userId and not bigPetType then
+				table.insert(myPets, petObject)
+			end
+		end
+
+		return myPets
+	end
+
+	-- Helper function to get CFrame from a pet object
+	local function getPetCFrame(petObject)
+		local petPart = nil
+		if petObject:IsA("BasePart") then
+			petPart = petObject
+		else
+			-- Look for a BasePart child (like a PrimaryPart or main part)
+			petPart = petObject:FindFirstChildOfClass("BasePart")
+			-- If no BasePart found, try PrimaryPart
+			if not petPart and petObject:IsA("Model") then
+				petPart = petObject.PrimaryPart
+			end
+		end
+
+		if petPart then
+			return petPart.CFrame
+		end
+		return nil
+	end
+
+	Tabs.Pets:AddButton({
+		Title = "Claim All",
+		Description = "Teleport to all your pets under Workspace.Pets and claim them",
+		Callback = function()
+			if Fluent.Unloaded then
+				return
+			end
+
+			local char = LocalPlayer.Character
+			local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+
+			-- Get my pets using shared function
+			local petObjects = getMyPets()
+
+			if #petObjects == 0 then
+				return
+			end
+
+			-- Teleport to each pet
+			for i, petObject in ipairs(petObjects) do
+				if Fluent.Unloaded then
+					return
+				end
+
+				local targetCFrame = getPetCFrame(petObject)
+				if targetCFrame then
+					humanoidRootPart.CFrame = targetCFrame
+					task.wait(0.5)
+				end
+			end
+		end,
+	})
+
+	Tabs.Pets:AddButton({
+		Title = "Find lowest",
+		Description = "Find and teleport to your pet with the lowest ProduceSpeed",
+		Callback = function()
+			if Fluent.Unloaded then
+				return
+			end
+
+			local char = LocalPlayer.Character
+			local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+
+			local petObjects = getMyPets()
+			local petsWithSpeed = {}
+
+			for _, petObject in ipairs(petObjects) do
+				local produceSpeed = petObject:GetAttribute("ProduceSpeed")
+				if produceSpeed then
+					table.insert(petsWithSpeed, {
+						object = petObject,
+						speed = produceSpeed,
+					})
+				end
+			end
+
+			if #petsWithSpeed == 0 then
+				return
+			end
+
+			-- Sort by ProduceSpeed (lowest first)
+			table.sort(petsWithSpeed, function(a, b)
+				return a.speed < b.speed
+			end)
+
+			-- Get the lowest ProduceSpeed pet
+			local lowestPet = petsWithSpeed[1]
+			local petObject = lowestPet.object
+			local produceSpeed = lowestPet.speed
+
+			-- Get pet name from Type attribute
+			local petType = petObject:GetAttribute("Type")
+			local petName = petType or petObject.Name
+
+			local targetCFrame = getPetCFrame(petObject)
+			if targetCFrame then
+				-- Teleport to pet
+				humanoidRootPart.CFrame = targetCFrame
+
+				-- Send notification
+				Fluent:Notify({
+					Title = "Pet Found",
+					Content = string.format("Pet: %s\nValue: %s", petName, tostring(produceSpeed)),
+					Duration = 5,
+				})
+			end
+		end,
+	})
 end
 
 do
