@@ -53,7 +53,7 @@ local RedemptionCodeRE = Remote.RedemptionCodeRE
 local LotteryRE = Remote.LotteryRE
 
 --// Mutations from Config.MutateEnum
-local mutationValues = { "Golden", "Diamond", "Electirc", "Fire", "Dino", "Snow", "Halloween" } -- All available mutations
+local mutationValues = { "Golden", "Diamond", "Electirc", "Fire", "Dino", "Snow", "Halloween", "Thanksgiving" } -- All available mutations
 
 local function getMutationIndex(mutation)
 	for i, m in ipairs(mutationValues) do
@@ -662,6 +662,8 @@ do
 			"Durian",
 			"Pumpkin",
 			"FrankenKiwi",
+			"Acorn",
+			"Cranberry",
 		}
 	end
 
@@ -684,6 +686,8 @@ do
 			"Durian",
 			"Pumpkin",
 			"FrankenKiwi",
+			"Acorn",
+			"Cranberry",
 		},
 	})
 
