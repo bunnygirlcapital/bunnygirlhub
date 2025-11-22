@@ -1490,26 +1490,27 @@ do
 	end)
 end
 
---// TAB: Pets
-do
-	-- Helper function to get user's pets from Workspace.Pets
-	local function getMyPets()
-		local userId = LocalPlayer.CharacterAppearanceId
+--// Shared Helper Functions
+-- Helper function to get user's pets from Workspace.Pets
+local function getMyPets()
+	local userId = LocalPlayer.CharacterAppearanceId
 
-		local myPets = {}
-		for _, petObject in pairs(Pets:GetChildren()) do
-			-- Filter by UserId attribute matching CharacterAppearanceId
-			local petUserId = petObject:GetAttribute("UserId")
-			-- Exclude pets with BigPetType attribute
-			local bigPetType = petObject:GetAttribute("BigPetType")
-			if petUserId == userId and not bigPetType then
-				table.insert(myPets, petObject)
-			end
+	local myPets = {}
+	for _, petObject in pairs(Pets:GetChildren()) do
+		-- Filter by UserId attribute matching CharacterAppearanceId
+		local petUserId = petObject:GetAttribute("UserId")
+		-- Exclude pets with BigPetType attribute
+		local bigPetType = petObject:GetAttribute("BigPetType")
+		if petUserId == userId and not bigPetType then
+			table.insert(myPets, petObject)
 		end
-
-		return myPets
 	end
 
+	return myPets
+end
+
+--// TAB: Pets
+do
 	-- Helper function to get CFrame from a pet object
 	local function getPetCFrame(petObject)
 		local petPart = nil
@@ -1879,6 +1880,109 @@ do
 				eggCount,
 				table.concat(eggDetails, "\n")
 			)
+
+			local customMessage = Options.MessageInput.Value or ""
+			if customMessage ~= "" then
+				message = customMessage .. "\n\n" .. message
+			end
+
+			sendWebhook(message)
+		end,
+	})
+
+	WebhookSection:AddButton({
+		Title = "Calculate Pets",
+		Description = "Count all pets by value bins and send to webhook",
+		Callback = function()
+			if Fluent.Unloaded then
+				return
+			end
+
+			local petObjects = getMyPets()
+			if #petObjects == 0 then
+				return
+			end
+
+			-- Initialize bins
+			local bins = {
+				["<100k"] = 0,
+				["100k+"] = 0,
+				["200k+"] = 0,
+				["300k+"] = 0,
+				["400k+"] = 0,
+				["500k+"] = 0,
+				["600k+"] = 0,
+				["700k+"] = 0,
+				["800k+"] = 0,
+				["900k+"] = 0,
+				["1m+"] = 0,
+				["1.1m+"] = 0,
+				["1.2m+"] = 0,
+				["1.3m+"] = 0,
+				["1.4m+"] = 0,
+				["1.5m+"] = 0,
+			}
+
+			-- Calculate values and bin pets
+			for _, petObject in ipairs(petObjects) do
+				local value = petObject:GetAttribute("ProduceSpeed")
+
+				if value < 100000 then
+					bins["<100k"] = bins["<100k"] + 1
+				elseif value < 200000 then
+					bins["100k+"] = bins["100k+"] + 1
+				elseif value < 300000 then
+					bins["200k+"] = bins["200k+"] + 1
+				elseif value < 400000 then
+					bins["300k+"] = bins["300k+"] + 1
+				elseif value < 500000 then
+					bins["400k+"] = bins["400k+"] + 1
+				elseif value < 600000 then
+					bins["500k+"] = bins["500k+"] + 1
+				elseif value < 700000 then
+					bins["600k+"] = bins["600k+"] + 1
+				elseif value < 800000 then
+					bins["700k+"] = bins["700k+"] + 1
+				elseif value < 900000 then
+					bins["800k+"] = bins["800k+"] + 1
+				elseif value < 1000000 then
+					bins["900k+"] = bins["900k+"] + 1
+				elseif value < 1100000 then
+					bins["1m+"] = bins["1m+"] + 1
+				elseif value < 1200000 then
+					bins["1.1m+"] = bins["1.1m+"] + 1
+				elseif value < 1300000 then
+					bins["1.2m+"] = bins["1.2m+"] + 1
+				elseif value < 1400000 then
+					bins["1.3m+"] = bins["1.3m+"] + 1
+				elseif value < 1500000 then
+					bins["1.4m+"] = bins["1.4m+"] + 1
+				else
+					bins["1.5m+"] = bins["1.5m+"] + 1
+				end
+			end
+
+			-- Build message
+			local message = "**Pet Value Distribution**\n\n"
+			message = message .. string.format("<100k pets: %d\n", bins["<100k"])
+			message = message .. string.format("100k+ pets: %d\n", bins["100k+"])
+			message = message .. string.format("200k+ pets: %d\n", bins["200k+"])
+			message = message .. string.format("300k+ pets: %d\n", bins["300k+"])
+			message = message .. string.format("400k+ pets: %d\n", bins["400k+"])
+			message = message .. string.format("500k+ pets: %d\n", bins["500k+"])
+			message = message .. string.format("600k+ pets: %d\n", bins["600k+"])
+			message = message .. string.format("700k+ pets: %d\n", bins["700k+"])
+			message = message .. string.format("800k+ pets: %d\n", bins["800k+"])
+			message = message .. string.format("900k+ pets: %d\n", bins["900k+"])
+			message = message .. string.format("1m+ pets: %d\n", bins["1m+"])
+			message = message .. string.format("1.1m+ pets: %d\n", bins["1.1m+"])
+			message = message .. string.format("1.2m+ pets: %d\n", bins["1.2m+"])
+			message = message .. string.format("1.3m+ pets: %d\n", bins["1.3m+"])
+			message = message .. string.format("1.4m+ pets: %d\n", bins["1.4m+"])
+			message = message .. string.format("1.5m+ pets: %d\n", bins["1.5m+"])
+
+			local totalPets = #petObjects
+			message = message .. string.format("\n**Total Pets: %d**", totalPets)
 
 			local customMessage = Options.MessageInput.Value or ""
 			if customMessage ~= "" then
