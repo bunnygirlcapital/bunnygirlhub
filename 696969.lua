@@ -33,8 +33,9 @@ local AssignedIslandName = LocalPlayer:GetAttribute("AssignedIslandName")
 local Eggs = ReplicatedStorage.Eggs
 local Pets = Workspace.Pets
 local Art = Workspace.Art
-local Data = PlayerGui.Data
-local FoodStore = Data.FoodStore
+local Data = PlayerGui:WaitForChild("Data", 10)
+local FoodStore = Data:WaitForChild("FoodStore", 10)
+local Egg = Data:WaitForChild("Egg", 10)
 local Remote = ReplicatedStorage.Remote
 
 local Config = ReplicatedStorage.Config
@@ -1822,7 +1823,7 @@ do
 		Title = "Calculate Eggs",
 		Description = "Count eggs in inventory and send to webhook",
 		Callback = function()
-			local eggData = PlayerGui.Data.Egg
+			local eggData = Egg
 			if not eggData then
 				Fluent:Notify({
 					Title = "Error",
