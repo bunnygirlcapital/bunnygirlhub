@@ -1603,7 +1603,8 @@ do
 		-- Calculate max value: base * (Mutate + 3) -- 3 Aurora
 		local maxValue = base * (mutateDefProduceRate + 3)
 
-		return maxValue
+		-- Round to whole number
+		return math.floor(maxValue + 0.5)
 	end
 
 	-- Helper function to find lowest pet by category
