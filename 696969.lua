@@ -1563,34 +1563,47 @@ do
 		end,
 	})
 
-	-- Helper function to calculate base value: ProduceSpeed / (sum of ProduceRate from mutations)
-	local function calculateBaseValue(produceSpeed, mutate, mutate2)
+	-- Helper function to calculate max value: ProduceSpeed / (sum of ProduceRate from mutations)
+	-- Then multiply base by Mutate.ProduceRate to get base + mutate value
+	local function calculateMaxValue(produceSpeed, mutate, mutate2)
 		if not produceSpeed or produceSpeed == 0 then
 			return 0
 		end
 
-		local totalProduceRate = 0
+		local mutateDefProduceRate = 0
+		local mutate2DefProduceRate = 0
 
+		-- Get ProduceRate from Mutate
 		if mutate and mutate ~= "" then
 			local mutateDef = ResMutate[mutate]
 			if mutateDef and mutateDef.ProduceRate then
-				totalProduceRate = totalProduceRate + mutateDef.ProduceRate
+				mutateDefProduceRate = mutateDef.ProduceRate
 			end
 		end
 
+		-- Get ProduceRate from Mutate2
 		if mutate2 and mutate2 ~= "" then
 			local mutate2Def = ResMutate[mutate2]
 			if mutate2Def and mutate2Def.ProduceRate then
-				totalProduceRate = totalProduceRate + mutate2Def.ProduceRate
+				mutate2DefProduceRate = mutate2Def.ProduceRate
 			end
 		end
+
+		-- Total multiplier = Mutate + Mutate2
+		local totalProduceRate = mutateDefProduceRate + mutate2DefProduceRate
 
 		-- If no mutations, default to 1 to avoid division by zero
 		if totalProduceRate == 0 then
 			totalProduceRate = 1
 		end
 
-		return produceSpeed / totalProduceRate
+		-- Calculate base: ProduceSpeed / (Mutate + Mutate2)
+		local base = produceSpeed / totalProduceRate
+
+		-- Calculate max value: base * (Mutate + 3) -- 3 Aurora
+		local maxValue = base * (mutateDefProduceRate + 3)
+
+		return maxValue
 	end
 
 	-- Helper function to find lowest pet by category
@@ -1627,7 +1640,8 @@ do
 
 					local value
 					if useBase then
-						value = calculateBaseValue(produceSpeed, mutate, mutate2)
+						-- For max value calculation, exclude Mutate2 from ProduceRate calculation
+						value = calculateMaxValue(produceSpeed, mutate, mutate2)
 					else
 						value = produceSpeed
 					end
@@ -1681,9 +1695,9 @@ do
 
 			-- Send notification
 			local categoryName = isOcean and "Ocean" or "Land"
-			local titleSuffix = useBase and " (Base)" or ""
-			local valueLabel = useBase and "Base Value" or "Value"
-			local valueStr = useBase and string.format("%.2f", value) or tostring(value)
+			local titleSuffix = useBase and " (Max)" or ""
+			local valueLabel = useBase and "Max Value" or "Value"
+			local valueStr = tostring(value)
 
 			Fluent:Notify({
 				Title = string.format("%s Pet Found%s", categoryName, titleSuffix),
@@ -1718,16 +1732,16 @@ do
 	})
 
 	Tabs.Pets:AddButton({
-		Title = "Find Lowest Ocean Pet (Base)",
-		Description = "Find and teleport to your ocean pet with the lowest base value (ProduceSpeed / sum of ProduceRate)",
+		Title = "Find Lowest Ocean Pet (Max)",
+		Description = "Find and teleport to your ocean pet with the lowest max value (ProduceSpeed / sum of ProduceRate)",
 		Callback = function()
 			findLowestPetByCategory(true, true)
 		end,
 	})
 
 	Tabs.Pets:AddButton({
-		Title = "Find Lowest Land Pet (Base)",
-		Description = "Find and teleport to your land pet with the lowest base value (ProduceSpeed / sum of ProduceRate)",
+		Title = "Find Lowest Land Pet (Max)",
+		Description = "Find and teleport to your land pet with the lowest max value (ProduceSpeed / sum of ProduceRate)",
 		Callback = function()
 			findLowestPetByCategory(false, true)
 		end,
