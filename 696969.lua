@@ -1734,7 +1734,7 @@ do
 
 	Tabs.Pets:AddButton({
 		Title = "Find Lowest Ocean Pet (Max)",
-		Description = "Find and teleport to your ocean pet with the lowest max value (ProduceSpeed / sum of ProduceRate)",
+		Description = "Find and teleport to your ocean pet with the lowest max value (with Aurora)",
 		Callback = function()
 			findLowestPetByCategory(true, true)
 		end,
@@ -1742,7 +1742,7 @@ do
 
 	Tabs.Pets:AddButton({
 		Title = "Find Lowest Land Pet (Max)",
-		Description = "Find and teleport to your land pet with the lowest max value (ProduceSpeed / sum of ProduceRate)",
+		Description = "Find and teleport to your land pet with the lowest max value (with Aurora)",
 		Callback = function()
 			findLowestPetByCategory(false, true)
 		end,
