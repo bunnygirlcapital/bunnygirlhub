@@ -41,7 +41,6 @@ local Config = ReplicatedStorage.Config
 local ResPet = require(Config.ResPet)
 local ResPetFood = require(Config.ResPetFood)
 local ResMutate = require(Config.ResMutate)
-local ResMutate = Config.ResMutate
 
 -- Load required modules
 Shared = require(ReplicatedStorage:WaitForChild("Shared", 10))
@@ -502,33 +501,15 @@ end
 
 --// TAB: Food
 do
-	-- Load food config from ResPetFood
-	local foodConfig = {}
+	-- Load foods from ResPetFood (already loaded at top of script)
+	local foods = ResPetFood
+
+	-- Extract food names from foods
 	local foodNames = {}
-
-	local function loadFoodConfig()
-		-- Try to require the ResPetFood ModuleScript from Config (if it exists and is a ModuleScript)
-		local success, config = pcall(function()
-			local resPetFood = Config.ResPetFood
-			if resPetFood and resPetFood:IsA("ModuleScript") then
-				return require(resPetFood)
-			end
-			return nil
-		end)
-
-		if success and config then
-			foodConfig = config
-			-- Extract food names from config
-			foodNames = {} -- Clear existing list
-			for foodName, foodData in pairs(config) do
-				if type(foodData) == "table" and foodData.ID then
-					table.insert(foodNames, foodName)
-				end
-			end
-			return true
+	for foodName, foodData in pairs(foods) do
+		if type(foodData) == "table" and foodData.ID then
+			table.insert(foodNames, foodName)
 		end
-
-		return false
 	end
 
 	-- Food buyer state
@@ -585,16 +566,15 @@ do
 			if type(foodValue) == "table" then
 				for foodName, isSelected in pairs(foodValue) do
 					if isSelected then
-						-- If config is loaded and has data, verify food exists in it; otherwise trust the selection
-						local configEmpty = not foodConfig or next(foodConfig) == nil
-						if configEmpty or foodConfig[foodName] then
+						-- Verify food exists in foods; otherwise trust the selection
+						if foods[foodName] then
 							table.insert(selectedFoods, foodName)
 						end
 					end
 				end
 			else
 				-- Handle case where it might be a string (single selection fallback)
-				if foodConfig[tostring(foodValue)] then
+				if foods[tostring(foodValue)] then
 					table.insert(selectedFoods, tostring(foodValue))
 				end
 			end
@@ -614,8 +594,8 @@ do
 		end
 
 		for _, foodName in pairs(selectedFoods) do
-			if foodConfig[foodName] then
-				local foodData = foodConfig[foodName]
+			if foods[foodName] then
+				local foodData = foods[foodName]
 				local quantity = foodData.SellStock2 or 1
 				attemptPurchaseFood(foodName, quantity)
 			end
@@ -642,34 +622,6 @@ do
 			foodBuyerState.foodStoreConnection:Disconnect()
 			foodBuyerState.foodStoreConnection = nil
 		end
-	end
-
-	-- Load food config BEFORE creating the dropdown
-	if not loadFoodConfig() then
-		foodNames = {
-			"Strawberry",
-			"Blueberry",
-			"Watermelon",
-			"Apple",
-			"Orange",
-			"Corn",
-			"Banana",
-			"Grape",
-			"Pear",
-			"Pineapple",
-			"DragonFruit",
-			"GoldMango",
-			"BloodstoneCycad",
-			"ColossalPinecone",
-			"VoltGinkgo",
-			"DeepseaPearlFruit",
-			"CandyCorn",
-			"Durian",
-			"Pumpkin",
-			"FrankenKiwi",
-			"Acorn",
-			"Cranberry",
-		}
 	end
 
 	local FoodSection = Tabs.Food:AddSection("Auto Buy Food")
@@ -1540,8 +1492,6 @@ end
 
 --// TAB: Pets
 do
-	local PetsSection = Tabs.Pets:AddSection("Pet Collection")
-
 	-- Helper function to get user's pets from Workspace.Pets
 	local function getMyPets()
 		local userId = LocalPlayer.CharacterAppearanceId
@@ -1582,7 +1532,7 @@ do
 
 	Tabs.Pets:AddButton({
 		Title = "Claim All",
-		Description = "Teleport to all your pets under Workspace.Pets and claim them",
+		Description = "Teleport to all your pets and claim them",
 		Callback = function()
 			if Fluent.Unloaded then
 				return
@@ -1613,24 +1563,46 @@ do
 		end,
 	})
 
+	-- Helper function to calculate base value: ProduceSpeed / (sum of ProduceRate from mutations)
+	local function calculateBaseValue(produceSpeed, mutate, mutate2)
+		if not produceSpeed or produceSpeed == 0 then
+			return 0
+		end
+
+		local totalProduceRate = 0
+
+		if mutate and mutate ~= "" then
+			local mutateDef = ResMutate[mutate]
+			if mutateDef and mutateDef.ProduceRate then
+				totalProduceRate = totalProduceRate + mutateDef.ProduceRate
+			end
+		end
+
+		if mutate2 and mutate2 ~= "" then
+			local mutate2Def = ResMutate[mutate2]
+			if mutate2Def and mutate2Def.ProduceRate then
+				totalProduceRate = totalProduceRate + mutate2Def.ProduceRate
+			end
+		end
+
+		-- If no mutations, default to 1 to avoid division by zero
+		if totalProduceRate == 0 then
+			totalProduceRate = 1
+		end
+
+		return produceSpeed / totalProduceRate
+	end
+
 	-- Helper function to find lowest pet by category
-	local function findLowestPetByCategory(isOcean)
+	local function findLowestPetByCategory(isOcean, useBase)
 		if Fluent.Unloaded then
 			return
 		end
 
 		local char = LocalPlayer.Character
-		if not char then
-			return
-		end
-
 		local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
-		if not humanoidRootPart then
-			return
-		end
-
 		local petObjects = getMyPets()
-		local petsWithSpeed = {}
+		local petsWithValue = {}
 
 		for _, petObject in ipairs(petObjects) do
 			local produceSpeed = petObject:GetAttribute("ProduceSpeed")
@@ -1650,15 +1622,28 @@ do
 				end
 
 				if matchesCategory then
-					table.insert(petsWithSpeed, {
+					local mutate = petObject:GetAttribute("Mutate")
+					local mutate2 = petObject:GetAttribute("Mutate2")
+
+					local value
+					if useBase then
+						value = calculateBaseValue(produceSpeed, mutate, mutate2)
+					else
+						value = produceSpeed
+					end
+
+					table.insert(petsWithValue, {
 						object = petObject,
-						speed = produceSpeed,
+						value = value,
+						produceSpeed = produceSpeed,
+						mutate = mutate,
+						mutate2 = mutate2,
 					})
 				end
 			end
 		end
 
-		if #petsWithSpeed == 0 then
+		if #petsWithValue == 0 then
 			local categoryName = isOcean and "Ocean" or "Land"
 			Fluent:Notify({
 				Title = "No Pets Found",
@@ -1668,23 +1653,24 @@ do
 			return
 		end
 
-		-- Sort by ProduceSpeed (lowest first)
-		table.sort(petsWithSpeed, function(a, b)
-			return a.speed < b.speed
+		-- Sort by value (lowest first)
+		table.sort(petsWithValue, function(a, b)
+			return a.value < b.value
 		end)
 
-		-- Get the lowest ProduceSpeed pet
-		local lowestPet = petsWithSpeed[1]
+		-- Get the lowest value pet
+		local lowestPet = petsWithValue[1]
 		local petObject = lowestPet.object
-		local produceSpeed = lowestPet.speed
+		local value = lowestPet.value
+		local produceSpeed = lowestPet.produceSpeed
 
 		-- Get pet name from Type attribute
 		local petType = petObject:GetAttribute("Type")
 		local petName = petType or petObject.Name
 
 		-- Get Mutate and Mutate2 attributes
-		local mutate = petObject:GetAttribute("Mutate")
-		local mutate2 = petObject:GetAttribute("Mutate2")
+		local mutate = lowestPet.mutate
+		local mutate2 = lowestPet.mutate2
 		local mutateStr = mutate and tostring(mutate) or "None"
 		local mutate2Str = mutate2 and tostring(mutate2) or "None"
 
@@ -1695,16 +1681,22 @@ do
 
 			-- Send notification
 			local categoryName = isOcean and "Ocean" or "Land"
+			local titleSuffix = useBase and " (Base)" or ""
+			local valueLabel = useBase and "Base Value" or "Value"
+			local valueStr = useBase and string.format("%.2f", value) or tostring(value)
+
 			Fluent:Notify({
-				Title = string.format("%s Pet Found", categoryName),
+				Title = string.format("%s Pet Found%s", categoryName, titleSuffix),
 				Content = string.format(
-					"Pet: %s\nValue: %s\nMutate: %s\nMutate2: %s",
+					"Pet: %s\n%s: %s\nProduceSpeed: %s\nMutate: %s\nMutate2: %s",
 					petName,
+					valueLabel,
+					valueStr,
 					tostring(produceSpeed),
 					mutateStr,
 					mutate2Str
 				),
-				Duration = 5,
+				Duration = 8,
 			})
 		end
 	end
@@ -1713,7 +1705,7 @@ do
 		Title = "Find Lowest Ocean Pet",
 		Description = "Find and teleport to your ocean pet with the lowest ProduceSpeed",
 		Callback = function()
-			findLowestPetByCategory(true)
+			findLowestPetByCategory(true, false)
 		end,
 	})
 
@@ -1721,7 +1713,23 @@ do
 		Title = "Find Lowest Land Pet",
 		Description = "Find and teleport to your land pet with the lowest ProduceSpeed",
 		Callback = function()
-			findLowestPetByCategory(false)
+			findLowestPetByCategory(false, false)
+		end,
+	})
+
+	Tabs.Pets:AddButton({
+		Title = "Find Lowest Ocean Pet (Base)",
+		Description = "Find and teleport to your ocean pet with the lowest base value (ProduceSpeed / sum of ProduceRate)",
+		Callback = function()
+			findLowestPetByCategory(true, true)
+		end,
+	})
+
+	Tabs.Pets:AddButton({
+		Title = "Find Lowest Land Pet (Base)",
+		Description = "Find and teleport to your land pet with the lowest base value (ProduceSpeed / sum of ProduceRate)",
+		Callback = function()
+			findLowestPetByCategory(false, true)
 		end,
 	})
 end
