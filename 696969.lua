@@ -1996,7 +1996,7 @@ do
 					return
 				end
 				CharacterRE:FireServer("Focus", egg.uid)
-				task.wait(1) -- Wait longer for screen to load
+				task.wait(0.5)
 				local screenGiftC1 = LocalPlayer.PlayerGui:FindFirstChild("ScreenGiftC")
 				if screenGiftC1 then
 					local screenGiftC2 = screenGiftC1:FindFirstChild("ScreenGiftC")
