@@ -1639,36 +1639,46 @@ do
 	end
 
 	Tabs.Pets:AddButton({
-		Title = "Claim All",
-		Description = "Teleport to all your pets and claim them",
-		Callback = function()
-			if Fluent.Unloaded then
-				return
-			end
+	 Title = "Claim All",
+	Description = "Teleport to all your pets and claim them",
+	Callback = function()
+	 if Fluent.Unloaded then
+	  return
+	 end
 
-			local char = LocalPlayer.Character
-			local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+	 local char = LocalPlayer.Character
+	 local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+	if not humanoidRootPart then
+	 return
+	 end
 
-			-- Get my pets using shared function
-			local petObjects = getMyPets()
+	 -- Save original position
+	 local originalCFrame = humanoidRootPart.CFrame
 
-			if #petObjects == 0 then
-				return
-			end
+	-- Get my pets using shared function
+	 local petObjects = getMyPets()
 
-			-- Teleport to each pet
-			for i, petObject in ipairs(petObjects) do
-				if Fluent.Unloaded then
-					return
-				end
+	 if #petObjects == 0 then
+	  return
+	 end
 
-				local targetCFrame = getPetCFrame(petObject)
-				if targetCFrame then
-					humanoidRootPart.CFrame = targetCFrame
-					task.wait(0.5)
-				end
-			end
-		end,
+	 -- Teleport to each pet
+	 for i, petObject in ipairs(petObjects) do
+	  if Fluent.Unloaded then
+	   return
+	  end
+
+	local targetCFrame = getPetCFrame(petObject)
+	if targetCFrame then
+	 humanoidRootPart.CFrame = targetCFrame
+	 task.wait(0.5)
+	 end
+	end
+
+	-- Teleport back to original position
+	task.wait(0.5)
+	humanoidRootPart.CFrame = originalCFrame
+	end,
 	})
 
 	-- Helper function to calculate max value: ProduceSpeed / (sum of ProduceRate from mutations)
