@@ -54,6 +54,7 @@ local TradeZoneRE = Remote.TradeZoneRE
 local TradeRE = Remote.TradeRE
 local RedemptionCodeRE = Remote.RedemptionCodeRE
 local LotteryRE = Remote.LotteryRE
+local GiftRE = Remote.GiftRE
 
 --// Mutations from Config.MutateEnum
 local mutationValues = { "Golden", "Diamond", "Electirc", "Fire", "Dino", "Snow", "Halloween", "Thanksgiving" } -- All available mutations
@@ -227,6 +228,7 @@ local Tabs = {
 	Lottery = Window:AddTab({ Title = "Lottery", Icon = "ticket" }),
 	Trade = Window:AddTab({ Title = "Trade", Icon = "repeat" }),
 	Pets = Window:AddTab({ Title = "Pets", Icon = "heart" }),
+	Gift = Window:AddTab({ Title = "Gift", Icon = "gift" }),
 	Webhook = Window:AddTab({ Title = "Webhook", Icon = "send" }),
 	Settings = Window:AddTab({ Title = "Settings", Icon = "settings" }),
 }
@@ -1875,6 +1877,153 @@ do
 		Callback = function()
 			findLowestPetByCategory(false, true)
 		end,
+	})
+end
+
+do
+	local GiftSection = Tabs.Gift:AddSection("Gift Eggs")
+
+	local SelectPlayer = GiftSection:AddDropdown("SelectPlayer", {
+		Title = "Select Player",
+		Values = {},
+		Multi = false,
+		Default = "",
+	})
+
+	local SelectEgg = GiftSection:AddDropdown("SelectEgg", {
+		Title = "Select Egg Type",
+		Values = {},
+		Multi = false,
+		Default = "",
+	})
+
+	local function refreshData()
+		-- Refresh players
+		local players = Players:GetPlayers()
+		local playerNames = {}
+		for _, p in ipairs(players) do
+			if p ~= LocalPlayer then
+				table.insert(playerNames, p.Name)
+			end
+		end
+		SelectPlayer:SetValues(playerNames)
+
+		-- Refresh eggs
+		local eggs = Egg:GetChildren()
+		local eggTypes = {}
+		for _, e in ipairs(eggs) do
+			local m = e:GetAttribute("M")
+			local t = e:GetAttribute("T")
+			if m and t then
+				local key = (m or "None") .. " " .. t
+				table.insert(eggTypes, key)
+			end
+		end
+		-- Remove duplicates
+		local unique = {}
+		for _, v in ipairs(eggTypes) do
+			unique[v] = true
+		end
+		local final = {}
+		for k in pairs(unique) do
+			table.insert(final, k)
+		end
+		SelectEgg:SetValues(final)
+	end
+
+	Tabs.Gift:AddButton({
+		Title = "Refresh",
+		Description = "Refresh players and eggs",
+		Callback = refreshData,
+	})
+
+	local function giftEggs()
+		local selectedPlayerName = Options.SelectPlayer and Options.SelectPlayer.Value or ""
+		if selectedPlayerName == "" then
+			Fluent:Notify({
+				Title = "Error",
+				Content = "Please select a player",
+				Duration = 3,
+			})
+			return
+		end
+		local targetPlayer = Players:FindFirstChild(selectedPlayerName)
+		if not targetPlayer then
+			Fluent:Notify({
+				Title = "Error",
+				Content = "Player not found",
+				Duration = 3,
+			})
+			return
+		end
+
+		local selectedEggType = Options.SelectEgg and Options.SelectEgg.Value or ""
+		if selectedEggType == "" then
+			Fluent:Notify({
+				Title = "Error",
+				Content = "Please select an egg type",
+				Duration = 3,
+			})
+			return
+		end
+
+		local parts = string.split(selectedEggType, " ")
+		local mutation = parts[1] == "None" and nil or parts[1]
+		local eggT = parts[2]
+
+		local eggsToGift = {}
+		for _, e in ipairs(Egg:GetChildren()) do
+			local m = e:GetAttribute("M")
+			local t = e:GetAttribute("T")
+			local uid = e:GetAttribute("UID")
+			if t == eggT and ((mutation and m == mutation) or (not mutation and not m)) and uid then
+				table.insert(eggsToGift, {uid = uid, m = m, t = t})
+			end
+		end
+
+		if #eggsToGift == 0 then
+			Fluent:Notify({
+				Title = "No Eggs",
+				Content = "No eggs found matching criteria",
+				Duration = 3,
+			})
+			return
+		end
+
+		task.spawn(function()
+			for _, egg in ipairs(eggsToGift) do
+				if Fluent.Unloaded then
+					return
+				end
+				CharacterRE:FireServer("Focus", egg.uid)
+				task.wait(0.5)
+				local UpdateBE = LocalPlayer.PlayerGui:FindFirstChild("ScreenGiftC")
+				if UpdateBE then
+					UpdateBE.ScreenGiftC.UpdateBE:Fire({TPlayer = targetPlayer})
+					task.wait(0.5)
+					GiftRE:FireServer(targetPlayer)
+					task.wait(1)
+				else
+					Fluent:Notify({
+						Title = "Error",
+						Content = "Gift screen not found",
+						Duration = 3,
+					})
+					return
+				end
+			end
+			Fluent:Notify({
+				Title = "Gifting Complete",
+				Content = "Gifted " .. #eggsToGift .. " eggs",
+				Duration = 3,
+			})
+		end)
+	end
+
+	Tabs.Gift:AddButton({
+		Title = "Gift",
+		Description = "Gift selected eggs to selected player",
+		Callback = giftEggs,
 	})
 end
 
