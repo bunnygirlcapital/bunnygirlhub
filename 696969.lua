@@ -1186,7 +1186,13 @@ do
 					end
 
 					-- Pool downgrade: only if player pet in pool and 2+ trader pets in pool
-					if not shouldAccept and Options.AllowDowngrade and Options.AllowDowngrade.Value and playerInPool and #traderPetsInPool >= 2 then
+					if
+						not shouldAccept
+						and Options.AllowDowngrade
+						and Options.AllowDowngrade.Value
+						and playerInPool
+						and #traderPetsInPool >= 2
+					then
 						local allTraderPetsMeetValue = true
 						for _, pet in pairs(traderPetsInPool) do
 							local petValue = getPetValue(pet)
@@ -1207,6 +1213,12 @@ do
 					autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
 
 					sendTradeWebhook(playerPet, traderPets, acceptanceReason, playerValue, traderValue, fairnessRatio)
+
+					-- Auto-equip highest rarity pet (or highest value if same rarity)
+					local bestPet = findBestPetFromTrader(traderPets)
+					if bestPet and bestPet.UID and Options.HeldPetUID then
+						Options.HeldPetUID:SetValue(bestPet.UID)
+					end
 
 					return
 				end
@@ -2257,4 +2269,3 @@ end
 -- Start auto-save setup
 -- Config is already loaded above, this section just handles auto-saving on changes
 task.spawn(setupAutoSave)
-                                                                                                                                                                                                                                                                                       
