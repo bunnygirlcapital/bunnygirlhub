@@ -887,6 +887,16 @@ do
 		return (traderValue - playerValue) / playerValue
 	end
 
+	local function isPetInPool(petType, poolPets)
+		if not poolPets then return false end
+		for name, selected in pairs(poolPets) do
+			if selected and tostring(petType):lower() == tostring(name):lower() then
+				return true
+			end
+		end
+		return false
+	end
+
 	local function formatNumber(num)
 		if not Format then
 			return tostring(num)
@@ -1148,6 +1158,59 @@ do
 				end
 			end
 
+			-- Check for pool system - fourth priority
+			if Options.AutoTradePool and Options.AutoTradePool.Value then
+				local poolPets = Options.PoolPets and Options.PoolPets.Value or {}
+				local percentage = tonumber(Options.PoolPercentage and Options.PoolPercentage.Value or 5) / 100
+				local minValue = playerValue * (1 - percentage)
+
+				local traderPetsInPool = {}
+				for _, pet in pairs(traderPets) do
+					if isPetInPool(pet.T, poolPets) then
+						table.insert(traderPetsInPool, pet)
+					end
+				end
+
+				local shouldAccept = false
+				local acceptanceReason = ""
+
+				if #traderPetsInPool > 0 then
+					-- Check trade into pool
+					if traderValue >= minValue then
+						shouldAccept = true
+						acceptanceReason = "Trade into Pool"
+					end
+
+					-- Check downgrade
+					if not shouldAccept and Options.AllowDowngrade and Options.AllowDowngrade.Value then
+						local playerInPool = isPetInPool(playerPet.T, poolPets)
+						if playerInPool and #traderPetsInPool >= 2 then
+							local allTraderPetsMeetValue = true
+							for _, pet in pairs(traderPetsInPool) do
+								local petValue = getPetValue(pet)
+								if petValue < minValue then
+									allTraderPetsMeetValue = false
+									break
+								end
+							end
+							if allTraderPetsMeetValue then
+								shouldAccept = true
+								acceptanceReason = "Pool Downgrade"
+							end
+						end
+					end
+				end
+
+				if shouldAccept then
+					TradeRE:FireServer({ event = "accept" })
+					autoTradeState.acceptedTrades = autoTradeState.acceptedTrades + 1
+
+					sendTradeWebhook(playerPet, traderPets, acceptanceReason, playerValue, traderValue, fairnessRatio)
+
+					return
+				end
+			end
+
 			-- Check fairness threshold and acceptance mode
 			local minFairnessPercent =
 				tonumber(Options.MinFairnessPercentage and Options.MinFairnessPercentage.Value or 0.9)
@@ -1318,6 +1381,36 @@ do
 	local AutoAcceptHigherRarity = TradeSection:AddToggle("AutoAcceptHigherRarity", {
 		Title = "Auto Accept Higher Rarity + Higher Value",
 		Description = "Accept if trader offers any pet with higher rarity AND value >= your pet",
+		Default = false,
+	})
+
+	-- Pool System UI
+	local PoolPets = TradeSection:AddDropdown("PoolPets", {
+		Title = "Pool Pets",
+		Description = "Select pets for the pool system",
+		Values = { "NightOwl", "MetroGiraffe", "Griffin_E1", "Centaur" },
+		Multi = true,
+		Default = { "NightOwl", "MetroGiraffe", "Griffin_E1", "Centaur" },
+	})
+
+	local AutoTradePool = TradeSection:AddToggle("AutoTradePool", {
+		Title = "Auto Trade Pool",
+		Description = "Enable pool system for trades",
+		Default = false,
+	})
+
+	local PoolPercentage = TradeSection:AddInput("PoolPercentage", {
+		Title = "Pool Percentage",
+		Description = "Maximum % less value allowed (e.g., 5)",
+		Default = 5,
+		Numeric = true,
+		Finished = false,
+		Placeholder = "5",
+	})
+
+	local AllowDowngrade = TradeSection:AddToggle("AllowDowngrade", {
+		Title = "Allow Downgrade in Pool",
+		Description = "Allow trading pool pet for multiple pool pets of similar value",
 		Default = false,
 	})
 
