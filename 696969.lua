@@ -1185,6 +1185,17 @@ do
 						acceptanceReason = "Trade into Pool"
 					end
 
+					-- Pool upgrade: if player pet in pool and trader has pet in pool worth more
+					if not shouldAccept and playerInPool then
+						for _, pet in pairs(traderPetsInPool) do
+							if getPetValue(pet) > playerValue then
+								shouldAccept = true
+								acceptanceReason = "Pool Upgrade"
+								break
+							end
+						end
+					end
+
 					-- Pool downgrade: only if player pet in pool and 2+ trader pets in pool
 					if
 						not shouldAccept
