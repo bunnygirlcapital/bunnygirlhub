@@ -1913,20 +1913,13 @@ do
 		local eggs = Egg:GetChildren()
 		local eggTypes = {}
 		for _, e in ipairs(eggs) do
-			local m = e:GetAttribute("M")
 			local t = e:GetAttribute("T")
-			if m and t then
-				local key = (m or "None") .. " " .. t
-				table.insert(eggTypes, key)
+			if t then
+				eggTypes[t] = true
 			end
 		end
-		-- Remove duplicates
-		local unique = {}
-		for _, v in ipairs(eggTypes) do
-			unique[v] = true
-		end
 		local final = {}
-		for k in pairs(unique) do
+		for k in pairs(eggTypes) do
 			table.insert(final, k)
 		end
 		SelectEgg:SetValues(final)
@@ -1968,17 +1961,12 @@ do
 			return
 		end
 
-		local parts = string.split(selectedEggType, " ")
-		local mutation = parts[1] == "None" and nil or parts[1]
-		local eggT = parts[2]
-
 		local eggsToGift = {}
 		for _, e in ipairs(Egg:GetChildren()) do
-			local m = e:GetAttribute("M")
 			local t = e:GetAttribute("T")
 			local uid = e:GetAttribute("UID")
-			if t == eggT and ((mutation and m == mutation) or (not mutation and not m)) and uid then
-				table.insert(eggsToGift, {uid = uid, m = m, t = t})
+			if t == selectedEggType and uid then
+				table.insert(eggsToGift, {uid = uid})
 			end
 		end
 
@@ -1989,6 +1977,16 @@ do
 				Duration = 3,
 			})
 			return
+		end
+
+		-- Teleport to target
+		local targetCharacter = targetPlayer.Character
+		if targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart") then
+			local humanoidRootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+			if humanoidRootPart then
+				humanoidRootPart.CFrame = targetCharacter.HumanoidRootPart.CFrame
+				task.wait(1)
+			end
 		end
 
 		task.spawn(function()
