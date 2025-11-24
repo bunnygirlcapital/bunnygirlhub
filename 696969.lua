@@ -1997,8 +1997,13 @@ do
 				end
 				CharacterRE:FireServer("Focus", egg.uid)
 				task.wait(0.5)
-				local UpdateBE = LocalPlayer.PlayerGui.ScreenGiftC.ScreenGiftC.UpdateBE
-				UpdateBE:Fire({TPlayer = targetPlayer})
+				local success, err = pcall(function()
+					local UpdateBE = LocalPlayer.PlayerGui.ScreenGiftC.ScreenGiftC.UpdateBE
+					UpdateBE:Fire({TPlayer = targetPlayer})
+				end)
+				if not success then
+					warn("UpdateBE error: " .. err)
+				end
 				task.wait(0.5)
 				GiftRE:FireServer(targetPlayer)
 				task.wait(1)
