@@ -888,7 +888,9 @@ do
 	end
 
 	local function isPetInPool(petType, poolPets)
-		if not poolPets then return false end
+		if not poolPets then
+			return false
+		end
 		for name, selected in pairs(poolPets) do
 			if selected and tostring(petType):lower() == tostring(name):lower() then
 				return true
@@ -1161,7 +1163,7 @@ do
 			-- Check for pool system - fourth priority
 			if Options.AutoTradePool and Options.AutoTradePool.Value then
 				local poolPets = Options.PoolPets and Options.PoolPets.Value or {}
-				local percentage = tonumber(Options.PoolPercentage and Options.PoolPercentage.Value or 5) / 100
+				local percentage = tonumber(Options.PoolPercentage and Options.PoolPercentage.Value or 10) / 100
 				local minValue = playerValue * (1 - percentage)
 
 				local traderPetsInPool = {}
@@ -1175,28 +1177,27 @@ do
 				local acceptanceReason = ""
 
 				if #traderPetsInPool > 0 then
-					-- Check trade into pool
-					if traderValue >= minValue then
+					local playerInPool = isPetInPool(playerPet.T, poolPets)
+
+					-- Trade into pool: only if player pet not in pool
+					if not playerInPool and traderValue >= minValue then
 						shouldAccept = true
 						acceptanceReason = "Trade into Pool"
 					end
 
-					-- Check downgrade
-					if not shouldAccept and Options.AllowDowngrade and Options.AllowDowngrade.Value then
-						local playerInPool = isPetInPool(playerPet.T, poolPets)
-						if playerInPool and #traderPetsInPool >= 2 then
-							local allTraderPetsMeetValue = true
-							for _, pet in pairs(traderPetsInPool) do
-								local petValue = getPetValue(pet)
-								if petValue < minValue then
-									allTraderPetsMeetValue = false
-									break
-								end
+					-- Pool downgrade: only if player pet in pool and 2+ trader pets in pool
+					if not shouldAccept and Options.AllowDowngrade and Options.AllowDowngrade.Value and playerInPool and #traderPetsInPool >= 2 then
+						local allTraderPetsMeetValue = true
+						for _, pet in pairs(traderPetsInPool) do
+							local petValue = getPetValue(pet)
+							if petValue < minValue then
+								allTraderPetsMeetValue = false
+								break
 							end
-							if allTraderPetsMeetValue then
-								shouldAccept = true
-								acceptanceReason = "Pool Downgrade"
-							end
+						end
+						if allTraderPetsMeetValue then
+							shouldAccept = true
+							acceptanceReason = "Pool Downgrade"
 						end
 					end
 				end
@@ -1401,11 +1402,11 @@ do
 
 	local PoolPercentage = TradeSection:AddInput("PoolPercentage", {
 		Title = "Pool Percentage",
-		Description = "Maximum % less value allowed (e.g., 5)",
-		Default = 5,
+		Description = "Maximum % less value allowed (e.g., 10)",
+		Default = 10,
 		Numeric = true,
 		Finished = false,
-		Placeholder = "5",
+		Placeholder = "10",
 	})
 
 	local AllowDowngrade = TradeSection:AddToggle("AllowDowngrade", {
