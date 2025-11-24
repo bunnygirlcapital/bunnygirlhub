@@ -1985,7 +1985,7 @@ do
 			local humanoidRootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 			if humanoidRootPart then
 				humanoidRootPart.CFrame = targetCharacter.HumanoidRootPart.CFrame
-				task.wait(1)
+				task.wait(0.5)
 			end
 		end
 
@@ -1995,19 +1995,16 @@ do
 					return
 				end
 				DeployRE:FireServer({event = "deploy", uid = egg.uid})
-				task.wait(0.5)
+				task.wait(0.2)
 				CharacterRE:FireServer("Focus", egg.uid)
-				task.wait(0.5)
-				local success, err = pcall(function()
+				task.wait(0.2)
+				local success = pcall(function()
 					local UpdateBE = LocalPlayer.PlayerGui.ScreenGiftC.ScreenGiftC.UpdateBE
 					UpdateBE:Fire({TPlayer = targetPlayer})
 				end)
-				if not success then
-					warn("UpdateBE error: " .. err)
-				end
-				task.wait(0.5)
+				task.wait(0.2)
 				GiftRE:FireServer(targetPlayer)
-				task.wait(1)
+				task.wait(0.2)
 			end
 			Fluent:Notify({
 				Title = "Gifting Complete",
