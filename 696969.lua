@@ -1997,6 +1997,9 @@ do
 				end
 				CharacterRE:FireServer("Focus", egg.uid)
 				task.wait(0.5)
+				local UpdateBE = LocalPlayer.PlayerGui.ScreenGiftC.ScreenGiftC.UpdateBE
+				UpdateBE:Fire({TPlayer = targetPlayer})
+				task.wait(0.5)
 				GiftRE:FireServer(targetPlayer)
 				task.wait(1)
 			end
