@@ -1996,17 +1996,37 @@ do
 					return
 				end
 				CharacterRE:FireServer("Focus", egg.uid)
-				task.wait(0.5)
-				local UpdateBE = LocalPlayer.PlayerGui:FindFirstChild("ScreenGiftC")
-				if UpdateBE then
-					UpdateBE.ScreenGiftC.UpdateBE:Fire({TPlayer = targetPlayer})
-					task.wait(0.5)
-					GiftRE:FireServer(targetPlayer)
-					task.wait(1)
+				task.wait(1) -- Wait longer for screen to load
+				local screenGiftC1 = LocalPlayer.PlayerGui:FindFirstChild("ScreenGiftC")
+				if screenGiftC1 then
+					local screenGiftC2 = screenGiftC1:FindFirstChild("ScreenGiftC")
+					if screenGiftC2 then
+						local updateBE = screenGiftC2:FindFirstChild("UpdateBE")
+						if updateBE then
+							updateBE:Fire({TPlayer = targetPlayer})
+							task.wait(0.5)
+							GiftRE:FireServer(targetPlayer)
+							task.wait(1)
+						else
+							Fluent:Notify({
+								Title = "Error",
+								Content = "UpdateBE not found",
+								Duration = 3,
+							})
+							return
+						end
+					else
+						Fluent:Notify({
+							Title = "Error",
+							Content = "ScreenGiftC2 not found",
+							Duration = 3,
+						})
+						return
+					end
 				else
 					Fluent:Notify({
 						Title = "Error",
-						Content = "Gift screen not found",
+						Content = "ScreenGiftC not found",
 						Duration = 3,
 					})
 					return
