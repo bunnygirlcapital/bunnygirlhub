@@ -55,6 +55,7 @@ local TradeRE = Remote.TradeRE
 local RedemptionCodeRE = Remote.RedemptionCodeRE
 local LotteryRE = Remote.LotteryRE
 local GiftRE = Remote.GiftRE
+local DeployRE = Remote.DeployRE
 
 --// Mutations from Config.MutateEnum
 local mutationValues = { "Golden", "Diamond", "Electirc", "Fire", "Dino", "Snow", "Halloween", "Thanksgiving" } -- All available mutations
@@ -1995,6 +1996,8 @@ do
 				if Fluent.Unloaded then
 					return
 				end
+				DeployRE:FireServer({event = "deploy", uid = egg.uid})
+				task.wait(0.5)
 				CharacterRE:FireServer("Focus", egg.uid)
 				task.wait(0.5)
 				local success, err = pcall(function()
