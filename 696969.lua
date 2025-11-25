@@ -1995,16 +1995,16 @@ do
 					return
 				end
 				DeployRE:FireServer({ event = "deploy", uid = egg.uid })
-				task.wait(0.2)
+				task.wait(0.4)
 				CharacterRE:FireServer("Focus", egg.uid)
-				task.wait(0.2)
+				task.wait(0.4)
 				local success = pcall(function()
 					local UpdateBE = LocalPlayer.PlayerGui.ScreenGiftC.ScreenGiftC.UpdateBE
 					UpdateBE:Fire({ TPlayer = targetPlayer })
 				end)
-				task.wait(0.2)
+				task.wait(0.4)
 				GiftRE:FireServer(targetPlayer)
-				task.wait(0.2)
+				task.wait(0.4)
 			end
 			Fluent:Notify({
 				Title = "Gifting Complete",
