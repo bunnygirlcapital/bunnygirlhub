@@ -1253,7 +1253,7 @@ do
 			if acceptThreshold > 0 then
 				for i, pet in pairs(traderPets) do
 					local petValue = getPetValue(pet)
-					if petValue >= acceptThreshold then
+					if petValue >= acceptThreshold and petValue > playerValue then
 						acceptByValue = true
 						table.insert(highValuePets, {
 							index = i,
@@ -1653,46 +1653,46 @@ do
 	end
 
 	Tabs.Pets:AddButton({
-	 Title = "Claim All",
-	Description = "Teleport to all your pets and claim them",
-	Callback = function()
-	 if Fluent.Unloaded then
-	  return
-	 end
+		Title = "Claim All",
+		Description = "Teleport to all your pets and claim them",
+		Callback = function()
+			if Fluent.Unloaded then
+				return
+			end
 
-	 local char = LocalPlayer.Character
-	 local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
-	if not humanoidRootPart then
-	 return
-	 end
+			local char = LocalPlayer.Character
+			local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+			if not humanoidRootPart then
+				return
+			end
 
-	 -- Save original position
-	 local originalCFrame = humanoidRootPart.CFrame
+			-- Save original position
+			local originalCFrame = humanoidRootPart.CFrame
 
-	-- Get my pets using shared function
-	 local petObjects = getMyPets()
+			-- Get my pets using shared function
+			local petObjects = getMyPets()
 
-	 if #petObjects == 0 then
-	  return
-	 end
+			if #petObjects == 0 then
+				return
+			end
 
-	 -- Teleport to each pet
-	 for i, petObject in ipairs(petObjects) do
-	  if Fluent.Unloaded then
-	   return
-	  end
+			-- Teleport to each pet
+			for i, petObject in ipairs(petObjects) do
+				if Fluent.Unloaded then
+					return
+				end
 
-	local targetCFrame = getPetCFrame(petObject)
-	if targetCFrame then
-	 humanoidRootPart.CFrame = targetCFrame
-	 task.wait(0.5)
-	 end
-	end
+				local targetCFrame = getPetCFrame(petObject)
+				if targetCFrame then
+					humanoidRootPart.CFrame = targetCFrame
+					task.wait(0.5)
+				end
+			end
 
-	-- Teleport back to original position
-	task.wait(0.5)
-	humanoidRootPart.CFrame = originalCFrame
-	end,
+			-- Teleport back to original position
+			task.wait(0.5)
+			humanoidRootPart.CFrame = originalCFrame
+		end,
 	})
 
 	-- Helper function to calculate max value: ProduceSpeed / (sum of ProduceRate from mutations)
@@ -1966,7 +1966,7 @@ do
 			local t = e:GetAttribute("T")
 			local uid = e:GetAttribute("UID")
 			if t == selectedEggType and uid then
-				table.insert(eggsToGift, {uid = uid})
+				table.insert(eggsToGift, { uid = uid })
 			end
 		end
 
@@ -1994,13 +1994,13 @@ do
 				if Fluent.Unloaded then
 					return
 				end
-				DeployRE:FireServer({event = "deploy", uid = egg.uid})
+				DeployRE:FireServer({ event = "deploy", uid = egg.uid })
 				task.wait(0.2)
 				CharacterRE:FireServer("Focus", egg.uid)
 				task.wait(0.2)
 				local success = pcall(function()
 					local UpdateBE = LocalPlayer.PlayerGui.ScreenGiftC.ScreenGiftC.UpdateBE
-					UpdateBE:Fire({TPlayer = targetPlayer})
+					UpdateBE:Fire({ TPlayer = targetPlayer })
 				end)
 				task.wait(0.2)
 				GiftRE:FireServer(targetPlayer)
