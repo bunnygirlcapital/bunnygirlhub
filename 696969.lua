@@ -85,6 +85,9 @@ local lotteryCodes = {
 	"ZTWPH3WW8SJ",
 	"9HDARHCQMWS",
 	"A38JBJ3TSSE",
+	"E5GSDBK7ATX",
+	"9WC77XXCM5A",
+	"LandCompensation",
 }
 
 --// Embed setting
