@@ -290,15 +290,15 @@ do
 	local SelectEggs = Section:AddDropdown("SelectEggs", {
 		Title = "Select Eggs",
 		Values = {
-			"GeneralKongEgg",
 			"GodzillaEgg",
 			"MetroGiraffeEgg",
 			"BiteForceSharkEgg",
 			"GreenStormEgg",
 			"DrakespineEgg",
+			"RedPandaEgg",
 		},
 		Multi = true,
-		Default = { "GeneralKongEgg", "GodzillaEgg" },
+		Default = { "GodzillaEgg" },
 	})
 
 	-- Auto Buy Egg: toggle
