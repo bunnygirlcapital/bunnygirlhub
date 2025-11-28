@@ -88,6 +88,10 @@ local lotteryCodes = {
 	"E5GSDBK7ATX",
 	"9WC77XXCM5A",
 	"LandCompensation",
+	"9WC77XXCM5A",
+	"E5GSDBK7ATX",
+	"BLACKFRIDAY",
+	"ZooFarmers",
 }
 
 --// Embed setting
@@ -290,13 +294,13 @@ do
 	local SelectEggs = Section:AddDropdown("SelectEggs", {
 		Title = "Select Eggs",
 		Values = {
-		"GodzillaEgg",
-		"MetroGiraffeEgg",
-		"BiteForceSharkEgg",
-		"GreenStormEgg",
-		"DrakespineEgg",
-		"RedPandaEgg",
-		 "SwanEgg",
+			"GodzillaEgg",
+			"MetroGiraffeEgg",
+			"BiteForceSharkEgg",
+			"GreenStormEgg",
+			"DrakespineEgg",
+			"RedPandaEgg",
+			"SwanEgg",
 		},
 		Multi = true,
 		Default = { "GodzillaEgg" },
