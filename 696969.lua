@@ -1191,8 +1191,17 @@ do
 				if #traderPetsInPool > 0 then
 					local playerInPool = isPetInPool(playerPet.T, poolPets)
 
-					-- Trade into pool: only if player pet not in pool
-					if not playerInPool and traderValue >= minValue then
+					-- Check if any trader's pool pet meets the value threshold
+					local anyPoolPetMeetsThreshold = false
+					for _, pet in pairs(traderPetsInPool) do
+						if getPetValue(pet) >= minValue then
+							anyPoolPetMeetsThreshold = true
+							break
+						end
+					end
+
+					-- Trade into pool: only if player pet not in pool and any pool pet meets threshold
+					if not playerInPool and anyPoolPetMeetsThreshold then
 						shouldAccept = true
 						acceptanceReason = "Trade into Pool"
 					end
@@ -1424,9 +1433,9 @@ do
 	local PoolPets = TradeSection:AddDropdown("PoolPets", {
 		Title = "Pool Pets",
 		Description = "Select pets for the pool system",
-		Values = { "NightOwl", "MetroGiraffe", "Griffin_E1", "Godzilla", "BluePhoenix", "Centaur" },
+		Values = { "NightOwl", "MetroGiraffe", "Griffin_E1", "Godzilla", "BluePhoenix", "SkeletonHorse", "Centaur" },
 		Multi = true,
-		Default = { "NightOwl", "MetroGiraffe", "Griffin_E1", "Centaur" },
+		Default = { "NightOwl", "MetroGiraffe", "Griffin_E1", "SkeletonHorse", "Centaur" },
 	})
 
 	local AutoTradePool = TradeSection:AddToggle("AutoTradePool", {
