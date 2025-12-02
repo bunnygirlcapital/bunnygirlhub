@@ -33,9 +33,9 @@ local AssignedIslandName = LocalPlayer:GetAttribute("AssignedIslandName")
 local Eggs = ReplicatedStorage.Eggs
 local Pets = Workspace.Pets
 local Art = Workspace.Art
-local Data = PlayerGui:WaitForChild("Data", 10)
-local FoodStore = Data:WaitForChild("FoodStore", 10)
-local Egg = Data:WaitForChild("Egg", 10)
+local Data = PlayerGui:WaitForChild("Data")
+local FoodStore = Data:WaitForChild("FoodStore")
+local Egg = Data:WaitForChild("Egg")
 local Remote = ReplicatedStorage.Remote
 
 local Config = ReplicatedStorage.Config
