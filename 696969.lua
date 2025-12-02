@@ -310,7 +310,6 @@ do
 	-- Auto Buy Egg: toggle
 	local AutoBuyEgg = Section:AddToggle("AutoBuyEgg", {
 		Title = "Auto Buy Egg",
-		Description = "Automatically buy the selected eggs",
 		Default = false,
 	})
 
@@ -640,7 +639,6 @@ do
 	local FoodSection = Tabs.Food:AddSection("Auto Buy Food")
 	local SelectFood = FoodSection:AddDropdown("SelectFood", {
 		Title = "Select Food",
-		Description = "Choose which foods to auto-buy (multiple selections allowed)",
 		Values = foodNames,
 		Multi = true,
 		Default = {
@@ -664,7 +662,7 @@ do
 	-- Auto Buy Food: toggle
 	local AutoBuyFood = FoodSection:AddToggle("AutoBuyFood", {
 		Title = "Auto Buy Food",
-		Description = "Automatically buy selected food every 5 minutes",
+		Description = "Automatically buy selected food when store refreshes",
 		Default = false,
 	})
 
@@ -782,7 +780,6 @@ do
 	-- Add Use All Tickets button
 	Tabs.Lottery:AddButton({
 		Title = "Use All Tickets",
-		Description = "Use all lottery tickets efficiently (10s, 3s, then 1s)",
 		Callback = function()
 			local ticketCount = getLotteryTicketCount()
 			if ticketCount == 0 then
@@ -1347,8 +1344,7 @@ do
 	local TradeSection = Tabs.Trade:AddSection("Auto Trade")
 
 	local AutoTradeToggle = TradeSection:AddToggle("AutoTrade", {
-		Title = "Enable Auto Trade",
-		Description = "Automatically accept/decline trades based on criteria",
+		Title = "Auto Trade",
 		Default = false,
 	})
 
@@ -1490,7 +1486,7 @@ do
 
 		-- Navigate to trade zone: Workspace > Art > Assigned_Island > ENV > TradeZone > Zone > TradeZone5 > TradePart
 		local tradePart =
-			Workspace.Art[AssignedIslandName].ENV.TradeZone.Zone[string.format("TradeZone%d", zoneNumber)].TradePart
+			Workspace.Art[AssignedIslandName].ENV.TradeZone.Zone:WaitForChild(string.format("TradeZone%d", zoneNumber)).TradePart
 
 		-- Get CFrame position
 		local targetCFrame = tradePart.CFrame
@@ -1602,7 +1598,7 @@ do
 
 			if Options.AutoClaimKitsune and Options.AutoClaimKitsune.Value then
 				local counterText =
-					Workspace.Art[AssignedIslandName].ENV.TradeZone.Zone.Kitsune.SellPart.BillboardGui.Root.Title.Text
+					Workspace.Art[AssignedIslandName].ENV.TradeZone.Zone:WaitForChild("Kitsune").SellPart.BillboardGui.Root.Title.Text
 				local current = tonumber(counterText:match("(%d+)/1000"))
 
 				if current < 1000 then
