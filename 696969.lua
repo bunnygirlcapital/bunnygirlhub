@@ -93,6 +93,9 @@ local lotteryCodes = {
 	"BLACKFRIDAY",
 	"ZooFarmers",
 	"FRIDAYGIFT5",
+	"XMASADVENT5",
+	"ACORN251204",
+	"ADMINABUSE1",
 }
 
 --// Embed setting
