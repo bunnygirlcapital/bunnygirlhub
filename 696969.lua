@@ -302,6 +302,7 @@ do
 			"DrakespineEgg",
 			"RedPandaEgg",
 			"SwanEgg",
+			"SpaceMouseEgg",
 		},
 		Multi = true,
 		Default = { "GodzillaEgg" },
