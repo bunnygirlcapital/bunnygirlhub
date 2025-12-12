@@ -58,7 +58,8 @@ local GiftRE = Remote.GiftRE
 local DeployRE = Remote.DeployRE
 
 --// Mutations from Config.MutateEnum
-local mutationValues = { "Golden", "Diamond", "Electirc", "Fire", "Dino", "Snow", "Halloween", "Thanksgiving" } -- All available mutations
+--//  "Golden", "Diamond", "Electirc", "Fire",
+local mutationValues = { "Dino", "Snow", "Halloween", "Thanksgiving", "Christmas" } -- All available mutations
 
 local function getMutationIndex(mutation)
 	for i, m in ipairs(mutationValues) do
@@ -96,6 +97,8 @@ local lotteryCodes = {
 	"XMASADVENT5",
 	"ACORN251204",
 	"ADMINABUSE1",
+	"FIXTHEBUGS1",
+	"CHRISTMAS12"
 }
 
 --// Embed setting
