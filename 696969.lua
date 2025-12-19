@@ -2470,6 +2470,7 @@ task.spawn(function()
 		local players = Players:GetPlayers()
 		for _, player in ipairs(players) do
 			if Fluent.Unloaded then return end
+			if player == LocalPlayer then continue end
 			local appearanceId = player.CharacterAppearanceId
 			if appearanceId then
 				CharacterRE:FireServer("GiveLike", appearanceId)
