@@ -272,6 +272,12 @@ local RenderingEnabled = GeneralSection:AddToggle("RenderingEnabled", {
 	Default = true,
 })
 
+local AutoLike = GeneralSection:AddToggle("AutoLike", {
+	Title = "Auto Like",
+	Description = "Automatically give likes to all players every 5 minutes",
+	Default = true,
+})
+
 --// TAB: Eggs
 do
 	-- Egg buyer state
@@ -2454,3 +2460,20 @@ end
 -- Start auto-save setup
 -- Config is already loaded above, this section just handles auto-saving on changes
 task.spawn(setupAutoSave)
+
+-- Auto Like task
+task.spawn(function()
+	while not Fluent.Unloaded do
+		task.wait(5 * 60) -- 5 minutes
+		if not Options.AutoLike.Value then continue end
+		local players = Players:GetPlayers()
+		for _, player in ipairs(players) do
+			if Fluent.Unloaded then return end
+			local appearanceId = player.CharacterAppearanceId
+			if appearanceId then
+				CharacterRE:FireServer("GiveLike", appearanceId)
+			end
+			task.wait(60) -- 1 minute
+		end
+	end
+end)
