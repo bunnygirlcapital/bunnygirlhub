@@ -315,8 +315,8 @@ do
 		"RedPandaEgg",
 		"SwanEgg",
 		"SpaceMouseEgg",
-		    "NanoRamEgg",
-    },
+		"NanoRamEgg",
+		},
 		Multi = true,
 		Default = { "GodzillaEgg" },
 	})
