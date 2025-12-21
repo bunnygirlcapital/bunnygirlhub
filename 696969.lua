@@ -98,7 +98,7 @@ local lotteryCodes = {
 	"ACORN251204",
 	"ADMINABUSE1",
 	"FIXTHEBUGS1",
-	"CHRISTMAS12"
+	"CHRISTMAS12",
 }
 
 --// Embed setting
@@ -307,15 +307,15 @@ do
 	local SelectEggs = Section:AddDropdown("SelectEggs", {
 		Title = "Select Eggs",
 		Values = {
-		"GodzillaEgg",
-		"MetroGiraffeEgg",
-		"BiteForceSharkEgg",
-		"GreenStormEgg",
-		"DrakespineEgg",
-		"RedPandaEgg",
-		"SwanEgg",
-		"SpaceMouseEgg",
-		"NanoRamEgg",
+			"GodzillaEgg",
+			"MetroGiraffeEgg",
+			"BiteForceSharkEgg",
+			"GreenStormEgg",
+			"DrakespineEgg",
+			"RedPandaEgg",
+			"SwanEgg",
+			"SpaceMouseEgg",
+			"NanoRamEgg",
 		},
 		Multi = true,
 		Default = { "GodzillaEgg" },
@@ -1499,8 +1499,9 @@ do
 		-- print("🔍 [Teleport] Assigned Island: " .. AssignedIslandName)
 
 		-- Navigate to trade zone: Workspace > Art > Assigned_Island > ENV > TradeZone > Zone > TradeZone5 > TradePart
-		local tradePart =
-			Workspace.Art[AssignedIslandName].ENV.TradeZone.Zone:WaitForChild(string.format("TradeZone%d", zoneNumber)).TradePart
+		local tradePart = Workspace.Art[AssignedIslandName].ENV.TradeZone.Zone:WaitForChild(
+			string.format("TradeZone%d", zoneNumber)
+		).TradePart
 
 		-- Get CFrame position
 		local targetCFrame = tradePart.CFrame
@@ -1760,8 +1761,8 @@ do
 		-- Calculate base: ProduceSpeed / (Mutate + Mutate2)
 		local base = produceSpeed / totalProduceRate
 
-		-- Calculate max value: base * (Mutate + 3) -- 3 Aurora
-		local maxValue = base * (mutateDefProduceRate + 3)
+		-- Calculate max value: base * (Mutate + 5) -- 5 Admin Abuse Mutation
+		local maxValue = base * (mutateDefProduceRate + 5)
 
 		-- Round to whole number
 		return math.floor(maxValue + 0.5)
@@ -1894,7 +1895,7 @@ do
 
 	Tabs.Pets:AddButton({
 		Title = "Find Lowest Ocean Pet (Max)",
-		Description = "Find and teleport to your ocean pet with the lowest max value (with Aurora)",
+		Description = "Find and teleport to your ocean pet with the lowest max value (with AA)",
 		Callback = function()
 			findLowestPetByCategory(true, true)
 		end,
@@ -1902,7 +1903,7 @@ do
 
 	Tabs.Pets:AddButton({
 		Title = "Find Lowest Land Pet (Max)",
-		Description = "Find and teleport to your land pet with the lowest max value (with Aurora)",
+		Description = "Find and teleport to your land pet with the lowest max value (with AA)",
 		Callback = function()
 			findLowestPetByCategory(false, true)
 		end,
@@ -2466,11 +2467,17 @@ task.spawn(setupAutoSave)
 task.spawn(function()
 	while not Fluent.Unloaded do
 		task.wait(5 * 60) -- 5 minutes
-		if not Options.AutoLike.Value then continue end
+		if not Options.AutoLike.Value then
+			continue
+		end
 		local players = Players:GetPlayers()
 		for _, player in ipairs(players) do
-			if Fluent.Unloaded then return end
-			if player == LocalPlayer then continue end
+			if Fluent.Unloaded then
+				return
+			end
+			if player == LocalPlayer then
+				continue
+			end
 			local appearanceId = player.CharacterAppearanceId
 			if appearanceId then
 				CharacterRE:FireServer("GiveLike", appearanceId)
