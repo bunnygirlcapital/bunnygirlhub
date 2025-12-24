@@ -1443,9 +1443,27 @@ do
 	local PoolPets = TradeSection:AddDropdown("PoolPets", {
 		Title = "Pool Pets",
 		Description = "Select pets for the pool system",
-		Values = { "NightOwl", "MetroGiraffe", "Griffin_E1", "Godzilla", "BluePhoenix", "SkeletonHorse", "Centaur" },
+		Values = {
+			"NightOwl",
+			"MetroGiraffe",
+			"Griffin_E1",
+			"Godzilla",
+			"BluePhoenix",
+			"SkeletonHorse",
+			"Centaur",
+			"Red-crownedCrane",
+		},
 		Multi = true,
-		Default = { "NightOwl", "MetroGiraffe", "Griffin_E1", "SkeletonHorse", "Centaur" },
+		Default = {
+			"NightOwl",
+			"MetroGiraffe",
+			"Griffin_E1",
+			"Godzilla",
+			"BluePhoenix",
+			"SkeletonHorse",
+			"Centaur",
+			"Red-crownedCrane",
+		},
 	})
 
 	local AutoTradePool = TradeSection:AddToggle("AutoTradePool", {
