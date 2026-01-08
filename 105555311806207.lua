@@ -57,6 +57,12 @@ local LotteryRE = Remote.LotteryRE
 local GiftRE = Remote.GiftRE
 local DeployRE = Remote.DeployRE
 
+--// Check if the script is already running
+if _G.BuildAZoo then
+	return
+end
+_G.BuildAZoo = true
+
 --// Mutations from Config.MutateEnum
 --//  "Golden", "Diamond", "Electirc", "Fire",
 local mutationValues = { "Dino", "Snow", "Halloween", "Thanksgiving", "Christmas" } -- All available mutations
@@ -228,12 +234,6 @@ do
 		iconGui:Destroy()
 	end)
 end
-
---// Check if the script is already running
--- if _G.BuildAZoo then
--- 	return
--- end
--- _G.BuildAZoo = true
 
 --// Tabs
 local Tabs = {
