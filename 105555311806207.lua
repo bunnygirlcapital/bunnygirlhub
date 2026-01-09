@@ -232,6 +232,7 @@ do
 			end
 		end
 		iconGui:Destroy()
+		_G.BuildAZoo = false
 	end)
 end
 
@@ -312,12 +313,13 @@ do
 			-- "BiteForceSharkEgg",
 			-- "GreenStormEgg",
 			-- "DrakespineEgg",
-			"RedPandaEgg",
-			"SwanEgg",
-			"SpaceMouseEgg",
-			"NanoRamEgg",
-			"RockChickenEgg",
+			"WhiteTigerEgg",
 			"BullDemonEgg",
+			"RockChickenEgg",
+			"NanoRamEgg",
+			"SpaceMouseEgg",
+			"SwanEgg",
+			"RedPandaEgg",
 		},
 		Multi = true,
 		Default = { "GodzillaEgg" },
