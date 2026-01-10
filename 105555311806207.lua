@@ -322,7 +322,6 @@ do
 			"RedPandaEgg",
 		},
 		Multi = true,
-		Default = { "GodzillaEgg" },
 	})
 
 	-- Auto Buy Egg: toggle
@@ -1554,6 +1553,10 @@ do
 	-- Function to equip pet by UID
 	local function equipPet(petUID)
 		if not petUID or petUID == "" then
+			return false
+		end
+
+		if autoTradeState.enabled == false then
 			return false
 		end
 
