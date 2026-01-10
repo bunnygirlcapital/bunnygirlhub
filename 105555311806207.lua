@@ -322,6 +322,7 @@ do
 			"RedPandaEgg",
 		},
 		Multi = true,
+		Default = { "WhiteTigerEgg" },
 	})
 
 	-- Auto Buy Egg: toggle
